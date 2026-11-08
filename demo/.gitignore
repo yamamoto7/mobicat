@@ -1,0 +1,10 @@
+/out/
+/ios/build*/
+/ios/build.log
+/ios/Shelf.xcodeproj/
+/android/.gradle/
+/android/.kotlin/
+/android/app/build/
+/android/build/
+/android/local.properties
+__pycache__/

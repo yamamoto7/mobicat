@@ -1,0 +1,23 @@
+name: Shelf
+options:
+  bundleIdPrefix: com.example
+  deploymentTarget:
+    iOS: "17.0"
+targets:
+  Shelf:
+    type: application
+    platform: iOS
+    sources: [Shelf]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.shelf
+        PRODUCT_NAME: Shelf
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Shelf
+        SWIFT_VERSION: "5.0"
+        CODE_SIGNING_ALLOWED: NO
+    info:
+      path: Shelf/Info.plist
+      properties:
+        UILaunchScreen: {}
