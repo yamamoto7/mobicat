@@ -430,10 +430,12 @@ fn entry_rows(
     head.push(Span::raw(pad_tag(&e.tag)));
     head.push(Span::raw(" "));
 
-    let mut msg_style = if e.level >= Level::Error {
-        lvl
-    } else {
-        Style::new()
+    // Fatal keeps its background on the level letter only: white on red is
+    // unreadable in many pastel themes, so the text itself is red and bold.
+    let mut msg_style = match e.level {
+        Level::Fatal => Style::new().fg(Color::Red).add_modifier(Modifier::BOLD),
+        Level::Error => lvl,
+        _ => Style::new(),
     };
     if style.highlight {
         msg_style = msg_style.add_modifier(Modifier::BOLD | Modifier::UNDERLINED);
