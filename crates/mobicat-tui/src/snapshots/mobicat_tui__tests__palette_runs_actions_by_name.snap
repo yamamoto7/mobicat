@@ -1,0 +1,17 @@
+---
+source: crates/mobicat-tui/src/tests.rs
+assertion_line: 383
+expression: "screen(&mut a, 90, 12)"
+---
+" mobicat · com.example.app                                  tab next · d targets · ? keys "
+" All 7   ● Pixel 9 4   ● iPhone 17 Pro 3                                                  "
+" 13:17:10.008 i  ╭ Actions ─────────────────────────────────────────────╮                 "
+" 13:17:10.879 A  │ : prev crash▏                                        │                 "
+" 13:17:11.200 A  │❯ Previous crash                                   [c │                 "
+"                 │                                                      │990              "
+"                 ╰ ↑↓ choose · enter run · esc close ───────────────────╯ boom            "
+"                                             at com.example.app.MainActivity.onClick(MainA"
+" 13:17:12.000 A   ── process started (pid 4120) ──                                        "
+" 13:17:12.410 i  F    libswiftCore.dylib ✖ CRASH  ItemStore.swift:42: Fatal error: Unexpec"
+" ● FOLLOW · ✖ 2 · level ≥ V · app-only                                            7 shown "
+" ↑↓ choose · enter run · type to narrow · esc close                                       "

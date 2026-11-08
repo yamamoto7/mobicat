@@ -1,0 +1,19 @@
+---
+source: crates/mobicat-tui/src/tests.rs
+assertion_line: 345
+expression: "screen(&mut a, 90, 14)"
+---
+" mobicat · com.example.app                                  tab next · d targets · ? keys "
+" All 2   ● Pixel 9 2   ● iPhone 17 Pro 0                                                  "
+" 13:17:10.879 A  E                OkHttp timeout after 10s                                "
+" 13:17:12.000 A   ── process started (pid 4120) ──                                        "
+"                                                                                          "
+"                                                                                          "
+"                                                                                          "
+"                                                                                          "
+"╭ filter ─────────────────────────────────────────────────────────────────────── 2 shown ╮"
+"│ / tag:ok▏                                                                              │"
+"╰────────────────────────────────────────────────────────────────────────────────────────╯"
+"   tag:OkHttp                                                                             "
+" ● FOLLOW · ✖ 2 · level ≥ V · app-only · q: tag:ok                                2 shown "
+" tab complete · ↑↓ history · enter apply · esc cancel                                     "

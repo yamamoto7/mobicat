@@ -1,0 +1,21 @@
+---
+source: crates/mobicat-tui/src/tests.rs
+assertion_line: 155
+expression: "screen(&mut a, 100, 16)"
+---
+" mobicat · com.example.app                                            tab next · d targets · ? keys "
+" All 7   ● Pixel 9 4   ● iPhone 17 Pro 3                                                            "
+" detail  Enter/Esc close ───────────────────────────────────────────────────────────────────────────"
+" Android   F  AndroidRuntime                                                                        "
+"      time  2026-11-07T13:17:11.200000+00:00                                                        "
+"    device  emulator-5554                                                                           "
+"       app  com.example.app                                                                         "
+" pid / tid  3990 / 3990                                                                             "
+"    source  log · app's own log                                                                     "
+"                                                                                                    "
+"FATAL EXCEPTION: main                                                                               "
+"Process: com.example.app, PID: 3990                                                                 "
+"java.lang.IllegalStateException: boom                                                               "
+"    at com.example.app.MainActivity.onClick(MainActivity.kt:42)                                     "
+" ‖ PAUSED · ✖ 2 · level ≥ V · app-only                                                      7 shown "
+" esc close · ↑↓ move · y copy · o open/close block                                                  "

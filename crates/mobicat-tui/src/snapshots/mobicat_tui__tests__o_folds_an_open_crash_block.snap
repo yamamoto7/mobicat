@@ -1,0 +1,19 @@
+---
+source: crates/mobicat-tui/src/tests.rs
+assertion_line: 133
+expression: "screen(&mut a, 110, 14)"
+---
+" mobicat · com.example.app                                                      tab next · d targets · ? keys "
+" All 7   ● Pixel 9 4   ● iPhone 17 Pro 3                                                                      "
+" 13:17:10.000 A  I          MainActivity onCreate                                                             "
+" 13:17:10.007 i  I               network GET /api/items 200 (124 ms)                                          "
+" 13:17:10.008 i  D           persistence saved 20 items                                                       "
+" 13:17:10.879 A  E                OkHttp timeout after 10s                                                    "
+"▌13:17:11.200 A  F        AndroidRuntime ✖ CRASH  FATAL EXCEPTION: main  +3 lines                             "
+" 13:17:12.000 A   ── process started (pid 4120) ──                                                            "
+" 13:17:12.410 i  F    libswiftCore.dylib ✖ CRASH  ItemStore.swift:42: Fatal error: Unexpectedly found nil     "
+"                                                                                                              "
+"                                                                                                              "
+"                                                                                                              "
+" ‖ PAUSED · ✖ 2 · level ≥ V · app-only                                                                7 shown "
+" esc back to live · ↑↓ move · enter detail · y copy · V select · ? keys                                       "

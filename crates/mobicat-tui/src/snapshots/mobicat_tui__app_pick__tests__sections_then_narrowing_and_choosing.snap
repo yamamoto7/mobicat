@@ -1,0 +1,19 @@
+---
+source: crates/mobicat-tui/src/app_pick.rs
+assertion_line: 357
+expression: t.backend().to_string()
+---
+" mobicat · choose an app                                       5 apps "
+"╭────────────────────────────────────────────────────────────────────╮"
+"│ ⌕ ▏type to filter                                                  │"
+"╰────────────────────────────────────────────────────────────────────╯"
+" Recent 1                                                             "
+"❯ com.example.app                        last  ● running  Android iOS "
+" Running now 1                                                        "
+"  org.sample.shop                              ● running  Android iOS "
+" Installed 3                                                          "
+"  com.example.other                                       Android     "
+"  com.example.widgets                                             iOS "
+"  net.acme.notes                                          Android     "
+"                                                                      "
+" ↑↓ choose · enter open · esc quit · ^c ^c quit                       "
