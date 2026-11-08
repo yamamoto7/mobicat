@@ -118,6 +118,13 @@ impl Annotator {
     }
 
     pub fn apply(&self, e: &mut Entry) {
+        // Log text comes from apps; never let it drive the terminal.
+        if let Some(clean) = sanitize(&e.message) {
+            e.message = clean.into();
+        }
+        if let Some(clean) = sanitize(&e.tag) {
+            e.tag = clean.into();
+        }
         if e.source == Source::System {
             return;
         }
@@ -132,6 +139,23 @@ impl Annotator {
             e.app_only = e.crash || !(runtime || self.noise.is_noise(&e.tag));
         }
     }
+}
+
+/// Control characters (escape sequences, bells, C1 codes) replaced with `�`,
+/// so a log line cannot move the cursor, retitle the window or write the
+/// clipboard. Newlines and tabs are kept; carriage returns are dropped.
+/// `None` when there is nothing to change.
+pub fn sanitize(s: &str) -> Option<String> {
+    let bad = |c: char| (c.is_control() && c != '\n' && c != '\t') || c == '\u{7f}';
+    if !s.chars().any(bad) {
+        return None;
+    }
+    Some(
+        s.chars()
+            .filter(|&c| c != '\r')
+            .map(|c| if bad(c) { '\u{fffd}' } else { c })
+            .collect(),
+    )
 }
 
 fn is_crash(e: &Entry) -> bool {
@@ -252,6 +276,20 @@ mod tests {
         e.tag = Arc::from("x");
         e.subsystem = sub.map(Arc::from);
         e
+    }
+
+    #[test]
+    fn control_characters_cannot_reach_the_terminal() {
+        assert_eq!(sanitize("plain\ttext\nnext"), None);
+        assert_eq!(
+            sanitize("a\x1b]52;c;aGk=\x07b\r\n\u{9b}2J").as_deref(),
+            Some("a\u{fffd}]52;c;aGk=\u{fffd}b\n\u{fffd}2J")
+        );
+        let mut e = ios(None, Level::Info, "\x1b[2Jcleared");
+        e.tag = Arc::from("t\x1b[31m");
+        let e = annotate(e);
+        assert_eq!(&*e.message, "\u{fffd}[2Jcleared");
+        assert_eq!(&*e.tag, "t\u{fffd}[31m");
     }
 
     fn annotate(mut e: Entry) -> Entry {
