@@ -6,7 +6,7 @@ Android の端末とエミュレータ（`adb logcat`）、iOS シミュレー�
 
 [English](README.md)
 
-<!-- TODO: デモ GIF -->
+![Android エミュレータと iOS シミュレータのログを mobicat で並べて見ている様子。クラッシュが赤く目立っている](docs/assets/demo.gif)
 
 ## 特徴
 

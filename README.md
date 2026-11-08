@@ -6,7 +6,7 @@ mobicat streams logs from Android devices and emulators (`adb logcat`) and iOS s
 
 [日本語](README.ja.md)
 
-<!-- TODO: demo GIF -->
+![mobicat showing logs from an Android emulator and an iOS simulator side by side, with a crash highlighted](docs/assets/demo.gif)
 
 ## Features
 
