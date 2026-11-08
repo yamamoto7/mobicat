@@ -1,12 +1,29 @@
 # mobicat
 
-Android and iOS app logs in one terminal UI.
+[![CI](https://github.com/yamamoto7/mobicat/actions/workflows/ci.yml/badge.svg)](https://github.com/yamamoto7/mobicat/actions/workflows/ci.yml)
+[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
-mobicat streams logs from Android devices and emulators (`adb logcat`) and iOS simulators (`simctl log stream`), merges them in time order, and shows only your app's own logs. It keeps following the app across restarts and makes crashes hard to miss.
+**Android and iOS app logs in one terminal UI.**
+
+mobicat streams logs from Android devices and emulators and from iOS simulators, merges them in time order, and shows only your app's own logs. It keeps following the app across restarts and makes crashes hard to miss.
 
 [日本語](README.ja.md)
 
 ![mobicat showing logs from an Android emulator and an iOS simulator side by side, with a crash highlighted](docs/assets/demo.gif)
+
+## Why mobicat
+
+If you build an app for both Android and iOS (React Native, Flutter, Kotlin Multiplatform, Capacitor, or two native apps), its logs live in two places: Logcat in Android Studio and the console in Xcode. Each shows one platform, and each is full of system noise.
+
+mobicat puts both in one terminal:
+
+|  | mobicat | Android Studio Logcat | Xcode console | pidcat |
+|---|:-:|:-:|:-:|:-:|
+| Android | ✓ | ✓ | | ✓ |
+| iOS simulator | ✓ | | ✓ | |
+| Android and iOS in one view | ✓ | | | |
+| Runs in a terminal, works over SSH | ✓ | | | ✓ |
+| JSON output for scripts and AI agents | ✓ | | | |
 
 ## Features
 
@@ -17,18 +34,29 @@ mobicat streams logs from Android devices and emulators (`adb logcat`) and iOS s
 - **Cross-platform frameworks.** React Native, Flutter, Kotlin Multiplatform and Capacitor logs are recognized (`fw:` in queries).
 - **Scriptable.** `--json` prints NDJSON and `--plain` prints one line per entry, for `jq`, CI and AI agents.
 
-## Requirements
+## Install
+
+> mobicat has not had its first release yet. Until then, build it from source (last option below).
+
+```sh
+# Homebrew (macOS, Linux)
+brew trust --tap yamamoto7/tap   # Homebrew 6 and later ask you to trust a tap first
+brew install yamamoto7/tap/mobicat
+
+# Shell installer (macOS, Linux)
+curl --proto '=https' --tlsv1.2 -LsSf https://github.com/yamamoto7/mobicat/releases/latest/download/mobicat-installer.sh | sh
+
+# PowerShell installer (Windows)
+powershell -ExecutionPolicy Bypass -c "irm https://github.com/yamamoto7/mobicat/releases/latest/download/mobicat-installer.ps1 | iex"
+
+# From source (Rust 1.88 or later)
+cargo install --locked --git https://github.com/yamamoto7/mobicat mobicat
+```
+
+You also need:
 
 - Android: `adb` (Android SDK platform-tools) on your `PATH`.
 - iOS: macOS with Xcode (`xcrun simctl`). Simulators only for now; physical iOS devices are not supported yet.
-
-## Install
-
-Prebuilt binaries are not published yet. Build from source with Rust 1.88 or later:
-
-```sh
-cargo install --locked --git https://github.com/yamamoto7/mobicat mobicat
-```
 
 ## Usage
 
@@ -114,11 +142,28 @@ tags = ["MyNoisyLib"]       # hide more tags
 keep = ["Choreographer"]    # show a tag hidden by default
 ```
 
-## Documentation
+## How it works
 
-- [Requirements](docs/requirements.md): screens, query syntax, keys and settings in detail
-- [Architecture](docs/architecture.md)
-- [Technical notes](docs/technical-notes.md): how logs are collected on each platform
+- **Android:** `adb logcat --uid <app uid>` for each device, so lines from the app's processes are kept across restarts (the UID stays the same; the PID does not). Framework tags that every app emits are hidden; your own tags and bundled SDKs are not.
+- **iOS simulator:** `xcrun simctl spawn <udid> log stream --style ndjson` filtered by the app's executable. A line is the app's own when it comes from code inside the `.app` bundle, from a subsystem that starts with the bundle ID, from React Native, or from the Swift runtime.
+- Multi-line messages (stack traces) are grouped into one entry, and crash patterns for each platform are marked.
+
+More detail: [requirements](docs/requirements.md), [architecture](docs/architecture.md), [technical notes](docs/technical-notes.md).
+
+## Roadmap
+
+- Physical iOS devices
+- Prebuilt binaries and a Homebrew formula with the first release
+
+Ideas and bug reports are welcome in [issues](https://github.com/yamamoto7/mobicat/issues).
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md). The demo above is recorded from a sample app with the scripts in [`demo/`](demo/README.md).
+
+## Acknowledgements
+
+mobicat started as "[pidcat](https://github.com/JakeWharton/pidcat), for both platforms". Its filter syntax follows Android Studio's Logcat.
 
 ## License
 

@@ -1,12 +1,29 @@
 # mobicat
 
-Android と iOS のアプリのログを、1つのターミナル画面で見るツールです。
+[![CI](https://github.com/yamamoto7/mobicat/actions/workflows/ci.yml/badge.svg)](https://github.com/yamamoto7/mobicat/actions/workflows/ci.yml)
+[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
-Android の端末とエミュレータ（`adb logcat`）、iOS シミュレータ（`simctl log stream`）のログを時刻順に1本にまとめ、自分のアプリのログだけを表示します。アプリを再起動しても追い続け、クラッシュは目立つように出します。
+**Android と iOS のアプリのログを、1つのターミナル画面で。**
+
+Android の端末とエミュレータ、iOS シミュレータのログを時刻順に1本にまとめ、自分のアプリのログだけを表示します。アプリを再起動しても追い続け、クラッシュは目立つように出します。
 
 [English](README.md)
 
 ![Android エミュレータと iOS シミュレータのログを mobicat で並べて見ている様子。クラッシュが赤く目立っている](docs/assets/demo.gif)
+
+## なぜ mobicat か
+
+Android と iOS の両方に出すアプリ（React Native、Flutter、Kotlin Multiplatform、Capacitor、または2つのネイティブアプリ）では、ログが2か所に分かれます。Android Studio の Logcat と、Xcode のコンソールです。どちらも片方の OS しか映さず、OS が出すノイズも多く混ざります。
+
+mobicat は、両方を1つのターミナルにまとめます。
+
+|  | mobicat | Android Studio の Logcat | Xcode のコンソール | pidcat |
+|---|:-:|:-:|:-:|:-:|
+| Android | ✓ | ✓ | | ✓ |
+| iOS シミュレータ | ✓ | | ✓ | |
+| Android と iOS を1画面で | ✓ | | | |
+| ターミナルで動く（SSH 越しでも） | ✓ | | | ✓ |
+| スクリプトや AI エージェント向けの JSON 出力 | ✓ | | | |
 
 ## 特徴
 
@@ -17,18 +34,29 @@ Android の端末とエミュレータ（`adb logcat`）、iOS シミュレー�
 - **クロスプラットフォームのフレームワーク**：React Native、Flutter、Kotlin Multiplatform、Capacitor のログを見分けます（クエリの `fw:`）。
 - **スクリプトから使える**：`--json` で NDJSON、`--plain` で1行ずつ出力します。`jq` や CI、AI エージェントから使えます。
 
-## 必要なもの
+## インストール
+
+> まだ最初のリリースを出していません。それまでは、ソースからビルドしてください（いちばん下の方法）。
+
+```sh
+# Homebrew（macOS、Linux）
+brew trust --tap yamamoto7/tap   # Homebrew 6 以降は、先に tap を信頼する必要があります
+brew install yamamoto7/tap/mobicat
+
+# シェルのインストーラ（macOS、Linux）
+curl --proto '=https' --tlsv1.2 -LsSf https://github.com/yamamoto7/mobicat/releases/latest/download/mobicat-installer.sh | sh
+
+# PowerShell のインストーラ（Windows）
+powershell -ExecutionPolicy Bypass -c "irm https://github.com/yamamoto7/mobicat/releases/latest/download/mobicat-installer.ps1 | iex"
+
+# ソースから（Rust 1.88 以降）
+cargo install --locked --git https://github.com/yamamoto7/mobicat mobicat
+```
+
+あわせて次のものが必要です。
 
 - Android：`adb`（Android SDK の platform-tools）に `PATH` が通っていること
 - iOS：macOS と Xcode（`xcrun simctl`）。今はシミュレータだけで、iOS の実機にはまだ対応していません。
-
-## インストール
-
-ビルド済みのバイナリはまだ公開していません。Rust 1.88 以降でソースからビルドします。
-
-```sh
-cargo install --locked --git https://github.com/yamamoto7/mobicat mobicat
-```
 
 ## 使い方
 
@@ -114,11 +142,28 @@ tags = ["MyNoisyLib"]       # 隠す tag を足す
 keep = ["Choreographer"]    # 既定で隠す tag を表示に戻す
 ```
 
-## 資料（英語）
+## しくみ
 
-- [Requirements](docs/requirements.md)：画面、クエリの書き方、キー、設定の詳細
-- [Architecture](docs/architecture.md)
-- [Technical notes](docs/technical-notes.md)：OS ごとのログの取り方
+- **Android**：端末ごとに `adb logcat --uid <アプリの UID>` を使います。再起動で PID が変わっても UID は変わらないので、アプリのプロセスの行を追い続けられます。どのアプリでも出るフレームワークの tag は隠し、アプリ自身の tag や同梱の SDK のログは残します。
+- **iOS シミュレータ**：`xcrun simctl spawn <udid> log stream --style ndjson` を、アプリの実行ファイルで絞って使います。`.app` の中のコードが出した行、subsystem が bundle ID で始まる行、React Native の行、Swift の実行時ライブラリの行を、アプリ自身のログとして扱います。
+- 複数行のメッセージ（スタックトレース）は1件にまとめ、OS ごとのクラッシュの形に印を付けます。
+
+詳しくは、[requirements](docs/requirements.md)、[architecture](docs/architecture.md)、[technical notes](docs/technical-notes.md)（いずれも英語）を見てください。
+
+## 今後の予定
+
+- iOS の実機への対応
+- 最初のリリースで、ビルド済みのバイナリと Homebrew の formula を出す
+
+アイデアや不具合の報告は [issues](https://github.com/yamamoto7/mobicat/issues) へどうぞ。日本語でもかまいません。
+
+## 開発に参加する
+
+[CONTRIBUTING.md](CONTRIBUTING.md) を見てください（英語）。上のデモは、[`demo/`](demo/README.md) のサンプルアプリとスクリプトで撮っています。
+
+## 謝辞
+
+mobicat は「両方の OS で使える [pidcat](https://github.com/JakeWharton/pidcat)」を目指して作り始めました。絞り込みの書き方は Android Studio の Logcat にならっています。
 
 ## ライセンス
 
