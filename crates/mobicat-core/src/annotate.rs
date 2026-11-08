@@ -123,6 +123,10 @@ impl Annotator {
         }
         detect_framework(e);
         e.crash = is_crash(e);
+        // iOS 26 logs Swift fatal errors at Default level; show them as fatal.
+        if e.crash && e.platform == Platform::Ios {
+            e.level = e.level.max(Level::Fatal);
+        }
         if e.platform == Platform::Android && e.source == Source::Log {
             let runtime = e.app.as_deref().is_some_and(|p| is_runtime_tag(&e.tag, p));
             e.app_only = e.crash || !(runtime || self.noise.is_noise(&e.tag));
@@ -139,11 +143,17 @@ fn is_crash(e: &Entry) -> bool {
                 || (&*e.tag == "DEBUG" && m.starts_with("*** *** ***"))
         }
         Platform::Ios => {
-            (e.level == Level::Fatal && m.contains("Fatal error:"))
+            (m.contains("Fatal error:") && (e.level == Level::Fatal || from_swift_runtime(e)))
                 || m.contains("Terminating app due to uncaught exception")
                 || (e.source != Source::Log && m.contains("Fatal error:"))
         }
     }
+}
+
+/// Written by the Swift runtime (libswiftCore), e.g. a force unwrap of nil.
+fn from_swift_runtime(e: &Entry) -> bool {
+    let swift = |s: &str| s.ends_with("libswiftCore.dylib");
+    swift(&e.tag) || e.library.as_deref().is_some_and(swift)
 }
 
 /// Kermit's default emoji per level.
@@ -294,6 +304,16 @@ mod tests {
         noisy_crash.tag = Arc::from("DEBUG");
         assert!(annotate(noisy_crash).app_only);
         assert!(annotate(ios(None, Level::Fatal, "Foo.swift:1: Fatal error: nil")).crash);
+        // iOS 26: Swift fatal errors arrive at Default level from libswiftCore.
+        let mut e = ios(None, Level::Info, "Foo.swift:1: Fatal error: nil");
+        e.tag = Arc::from("libswiftCore.dylib");
+        let e = annotate(e);
+        assert!(e.crash);
+        assert_eq!(e.level, Level::Fatal);
+        assert!(
+            !annotate(ios(None, Level::Info, "user typed Fatal error: x")).crash,
+            "only the Swift runtime's own message"
+        );
         assert!(
             annotate(ios(
                 None,
