@@ -1,0 +1,40 @@
+--------- beginning of main
+         1794057757.468383 10210  3727  3727 I om.example.app: Using CollectorTypeCMC GC.
+         1794057757.484206 10210  3727  3727 E om.example.app: Not starting debugger since process cannot load the jdwp agent.
+         1794057757.487897 10210  3727  3727 D nativeloader: Load libframework-connectivity-tiramisu-jni.so using APEX ns com_android_tethering for caller /apex/com.android.tethering/javalib/framework-connectivity-t.jar: ok
+         1794057757.573197 10210  3727  3727 D ApplicationLoaders: Returning zygote-cached class loader: /system_ext/framework/androidx.window.extensions.jar
+         1794057757.573822 10210  3727  3727 D ApplicationLoaders: Returning zygote-cached class loader: /system_ext/framework/androidx.window.sidecar.jar
+         1794057757.665243 10210  3727  3727 D nativeloader: Configuring clns-7 for other apk /data/app/~~iAN9eqAhg2RolAai344z5w==/com.example.app-C2W3ycQ8C5I5r5gxJ3e5kQ==/base.apk. target_sdk_version=36, uses_libraries=, library_path=/data/app/~~iAN9eqAhg2RolAai344z5w==/com.example.app-C2W3ycQ8C5I5r5gxJ3e5kQ==/lib/arm64:/data/app/~~iAN9eqAhg2RolAai344z5w==/com.example.app-C2W3ycQ8C5I5r5gxJ3e5kQ==/base.apk!/lib/arm64-v8a, permitted_path=/data:/mnt/expand:/data/user/0/com.example.app
+         1794057757.677306 10210  3727  3727 V GraphicsEnvironment: Currently set values for:
+         1794057757.677315 10210  3727  3727 V GraphicsEnvironment:   angle_gl_driver_selection_pkgs=[]
+         1794057757.677320 10210  3727  3727 V GraphicsEnvironment:   angle_gl_driver_selection_values=[]
+         1794057757.677322 10210  3727  3727 V GraphicsEnvironment: Global.Settings values are invalid: number of packages: 0, number of values: 0
+         1794057757.677404 10210  3727  3727 V GraphicsEnvironment: Neither updatable production driver nor prerelease driver is supported.
+         1794057757.710598 10210  3727  3727 D FirebaseSessions: Dependency to CRASHLYTICS added.
+         1794057757.712548 10210  3727  3727 I FirebaseApp: Device unlocked: initializing all Firebase APIs for app [DEFAULT]
+         1794057757.720397 10210  3727  3727 D nativeloader: Load /data/app/~~iAN9eqAhg2RolAai344z5w==/com.example.app-C2W3ycQ8C5I5r5gxJ3e5kQ==/base.apk!/lib/arm64-v8a/libcrashlytics.so using ns clns-7 from class loader (caller=/data/app/~~iAN9eqAhg2RolAai344z5w==/com.example.app-C2W3ycQ8C5I5r5gxJ3e5kQ==/base.apk): ok
+--------- beginning of system
+         1794057757.792786 10210  3727  3770 W ziparchive: Unable to open '/data/app/~~1_HcQvnyb0hRpBOfS9Cj1Q==/com.google.android.trichromelibrary_636771932-Y9_NvjnZfZ77UxlHSB7KEQ==/TrichromeLibrary.dm': No such file or directory
+         1794057757.792798 10210  3727  3770 W ziparchive: Unable to open '/data/app/~~1_HcQvnyb0hRpBOfS9Cj1Q==/com.google.android.trichromelibrary_636771932-Y9_NvjnZfZ77UxlHSB7KEQ==/TrichromeLibrary.dm': No such file or directory
+         1794057757.792860 10210  3727  3770 W om.example.app: Entry not found
+         1794057757.972830 10210  3727  3735 E adservices: onNullBinding android.adservices.MEASUREMENT_SERVICE
+         1794057757.973555 10210  3727  3824 E adservices: Failed to bind to measurement service: com.android.adservices.shared.common.exception.ServiceUnavailableException: Service is not available.
+         1794057762.287623 10210  3990  3990 I om.example.app: Using CollectorTypeCMC GC.
+         1794057762.288713 10210  3990  3990 E om.example.app: Not starting debugger since process cannot load the jdwp agent.
+         1794057762.289606 10210  3990  3990 D nativeloader: Load libframework-connectivity-tiramisu-jni.so using APEX ns com_android_tethering for caller /apex/com.android.tethering/javalib/framework-connectivity-t.jar: ok
+         1794057762.295664 10210  3990  3990 D ApplicationLoaders: Returning zygote-cached class loader: /system_ext/framework/androidx.window.extensions.jar
+         1794057762.295671 10210  3990  3990 D ApplicationLoaders: Returning zygote-cached class loader: /system_ext/framework/androidx.window.sidecar.jar
+         1794057762.298084 10210  3990  3990 D nativeloader: Configuring clns-7 for other apk /data/app/~~iAN9eqAhg2RolAai344z5w==/com.example.app-C2W3ycQ8C5I5r5gxJ3e5kQ==/base.apk. target_sdk_version=36, uses_libraries=, library_path=/data/app/~~iAN9eqAhg2RolAai344z5w==/com.example.app-C2W3ycQ8C5I5r5gxJ3e5kQ==/lib/arm64:/data/app/~~iAN9eqAhg2RolAai344z5w==/com.example.app-C2W3ycQ8C5I5r5gxJ3e5kQ==/base.apk!/lib/arm64-v8a, permitted_path=/data:/mnt/expand:/data/user/0/com.example.app
+         1794057762.299361 10210  3990  3990 V GraphicsEnvironment: Currently set values for:
+         1794057762.299365 10210  3990  3990 V GraphicsEnvironment:   angle_gl_driver_selection_pkgs=[]
+         1794057762.299366 10210  3990  3990 V GraphicsEnvironment:   angle_gl_driver_selection_values=[]
+         1794057762.299368 10210  3990  3990 V GraphicsEnvironment: Global.Settings values are invalid: number of packages: 0, number of values: 0
+         1794057762.299384 10210  3990  3990 V GraphicsEnvironment: Neither updatable production driver nor prerelease driver is supported.
+         1794057762.307822 10210  3990  3990 D FirebaseSessions: Dependency to CRASHLYTICS added.
+         1794057762.308388 10210  3990  3990 I FirebaseApp: Device unlocked: initializing all Firebase APIs for app [DEFAULT]
+         1794057762.309575 10210  3990  3990 D nativeloader: Load /data/app/~~iAN9eqAhg2RolAai344z5w==/com.example.app-C2W3ycQ8C5I5r5gxJ3e5kQ==/base.apk!/lib/arm64-v8a/libcrashlytics.so using ns clns-7 from class loader (caller=/data/app/~~iAN9eqAhg2RolAai344z5w==/com.example.app-C2W3ycQ8C5I5r5gxJ3e5kQ==/base.apk): ok
+         1794057762.389690 10210  3990  4028 W ziparchive: Unable to open '/data/app/~~1_HcQvnyb0hRpBOfS9Cj1Q==/com.google.android.trichromelibrary_636771932-Y9_NvjnZfZ77UxlHSB7KEQ==/TrichromeLibrary.dm': No such file or directory
+         1794057762.389694 10210  3990  4028 W ziparchive: Unable to open '/data/app/~~1_HcQvnyb0hRpBOfS9Cj1Q==/com.google.android.trichromelibrary_636771932-Y9_NvjnZfZ77UxlHSB7KEQ==/TrichromeLibrary.dm': No such file or directory
+         1794057762.389745 10210  3990  4028 W om.example.app: Entry not found
+         1794057762.471422 10210  3990  3998 E adservices: onNullBinding android.adservices.MEASUREMENT_SERVICE
+         1794057762.471770 10210  3990  4078 E adservices: Failed to bind to measurement service: com.android.adservices.shared.common.exception.ServiceUnavailableException: Service is not available.
