@@ -11,3 +11,6 @@ updates:
     directory: /
     schedule:
       interval: monthly
+    ignore:
+      # Its ref is a Rust version (the MSRV job uses @1.88), not an action version.
+      - dependency-name: dtolnay/rust-toolchain
