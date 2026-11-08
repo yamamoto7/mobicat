@@ -272,7 +272,7 @@ Details decided while implementing, and changes from the sections above. This se
 - **Query**:
   - Bare words are always AND (`http failed` matches lines containing both). Repeated `message:` is OR.
   - Values without uppercase letters are case-insensitive (smartcase). Regex (`~:`) is used as-is.
-  - mobicat's own lines (restart, disconnect, warnings) are never hidden by any filter.
+  - mobicat's own lines (restart, disconnect, warnings) are never hidden by any filter in the TUI. With `--json` or `--plain` and a query, they must match the query too (`-q is:system` selects them), so scripts get exactly what they ask for.
   - `is:` accepts `crash`, `stacktrace`, `stdout`, `system`.
   - A config profile and the command-line query are each wrapped in parentheses and ANDed (so `|` does not leak between them).
 - **Android app-only**: hide tags the OS emits in the app's process. The default list is `DEFAULT_ANDROID_NOISE` in `crates/mobicat-core/src/annotate.rs` (chosen from real API 35 data). Also hide lines where ART uses the process name (last 15 characters) as the tag. SDKs bundled with the app (Firebase, ads, etc.) are not hidden (the same idea as keeping frameworks inside the .app on iOS). Crashes are always kept.

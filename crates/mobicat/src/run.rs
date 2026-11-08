@@ -8,7 +8,7 @@ use std::time::Duration;
 use anyhow::{Context, Result, bail};
 use mobicat_core::output::{write_json, write_plain};
 use mobicat_core::store::now_ns;
-use mobicat_core::{Clock, Entry, Filter, Level, Noise, Platform, Query, Store};
+use mobicat_core::{Clock, Entry, Filter, Level, Noise, Platform, Query, Source, Store};
 use mobicat_sources::android::{self, Adb, AndroidStream};
 use mobicat_sources::iossim::{self, SimStream};
 use mobicat_sources::{file, launch};
@@ -594,7 +594,7 @@ async fn print(
         let now = now_ns();
         let written = (|| -> io::Result<()> {
             for e in &batch {
-                if !filter.matches(e, now) {
+                if !filter.matches(e, now) || !script_wants(&filter, e, now) {
                     continue;
                 }
                 if json {
@@ -752,5 +752,41 @@ async fn watch_devices(store: mobicat_tui::SharedStore, w: Watch) {
                 }
             }
         }
+    }
+}
+
+/// The TUI always shows mobicat's own lines (restarts, disconnects). A script
+/// that asks for `-q is:crash` wants exactly that, so with a query, mobicat's
+/// own lines must match it too (`-q is:system` still gets them).
+fn script_wants(filter: &Filter, e: &Entry, now: i64) -> bool {
+    e.source != Source::System
+        || filter
+            .query
+            .as_ref()
+            .is_none_or(|q| q.is_empty() || q.matches(e, now))
+}
+
+#[cfg(test)]
+mod tests {
+    use std::sync::Arc;
+
+    use super::*;
+
+    #[test]
+    fn scripts_get_only_what_the_query_asks_for() {
+        let restart = Entry::system(
+            Platform::Android,
+            Arc::from("d"),
+            None,
+            0,
+            Level::Info,
+            "process started (pid 1)",
+        );
+        let mut f = Filter::default();
+        assert!(script_wants(&f, &restart, 0), "no query: keep restarts");
+        f.query = Some(Arc::new(Query::parse("is:crash").unwrap()));
+        assert!(!script_wants(&f, &restart, 0));
+        f.query = Some(Arc::new(Query::parse("is:system").unwrap()));
+        assert!(script_wants(&f, &restart, 0));
     }
 }
