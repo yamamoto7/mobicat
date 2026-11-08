@@ -1,0 +1,34 @@
+name: Bug report
+description: Something does not work as expected
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you ran, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: mobicat version
+      placeholder: mobicat --version
+    validations:
+      required: true
+  - type: input
+    id: system
+    attributes:
+      label: OS and terminal
+      placeholder: macOS 26.1, Ghostty
+  - type: input
+    id: device
+    attributes:
+      label: Device
+      placeholder: Pixel 8 emulator (API 35) / iPhone 17 Pro simulator (iOS 26.5)
+  - type: textarea
+    id: logs
+    attributes:
+      label: Log lines
+      description: Lines that were shown wrongly, if any. Remove anything private.
+      render: text
