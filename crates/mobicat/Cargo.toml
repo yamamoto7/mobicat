@@ -6,6 +6,7 @@ license.workspace = true
 rust-version.workspace = true
 publish.workspace = true
 repository.workspace = true
+homepage.workspace = true
 readme = "../../README.md"
 keywords = ["android", "ios", "logcat", "tui", "logs"]
 categories = ["command-line-utilities", "development-tools::debugging"]
@@ -20,6 +21,10 @@ mobicat-sources = { version = "0.0.0", path = "../mobicat-sources" }
 mobicat-tui = { version = "0.0.0", path = "../mobicat-tui" }
 tokio = { version = "1.54.1", features = ["rt-multi-thread", "macros", "sync", "time", "signal", "io-std", "io-util"] }
 toml = { version = "1.2.1", features = ["preserve_order"] }
+
+[package.metadata.dist]
+# Built and released by dist even though the crate is not on crates.io yet.
+dist = true
 
 [lints]
 workspace = true
