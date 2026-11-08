@@ -68,7 +68,8 @@ impl Adb {
                     .map(str::trim)
                     .find(|l| !l.is_empty() && *l != "OK")
             {
-                return name.to_owned();
+                // AVD names can't hold spaces; "Pixel_8" reads as "Pixel 8".
+                return name.replace('_', " ");
             }
         }
         d.model.clone().unwrap_or_else(|| d.serial.clone())
