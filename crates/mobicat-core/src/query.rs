@@ -570,26 +570,13 @@ fn compile(raw: RawTerm) -> Result<Term, QueryError> {
         }
         "age" => {
             no_regex(key)?;
-            let (num, unit) = v.split_at(v.find(|c: char| !c.is_ascii_digit()).unwrap_or(v.len()));
-            let n: i64 = num.parse().map_err(|_| {
+            let d = parse_duration(&v).ok_or_else(|| {
                 err(format!(
                     "`age:` needs a duration like 30s, 5m, 1h, not `{}`",
                     raw.value
                 ))
             })?;
-            let secs = match unit {
-                "s" | "" => n,
-                "m" => n * 60,
-                "h" => n * 3600,
-                "d" => n * 86_400,
-                _ => {
-                    return Err(err(format!(
-                        "unknown unit in `age:{}` (s, m, h, d)",
-                        raw.value
-                    )));
-                }
-            };
-            Term::Age(secs.saturating_mul(1_000_000_000))
+            Term::Age(i64::try_from(d.as_nanos()).unwrap_or(i64::MAX))
         }
         other => {
             return Err(err(format!(
@@ -598,6 +585,20 @@ fn compile(raw: RawTerm) -> Result<Term, QueryError> {
             )));
         }
     })
+}
+
+/// A duration like `30s`, `5m`, `1h` or `2d`. A bare number is seconds.
+pub fn parse_duration(v: &str) -> Option<std::time::Duration> {
+    let (num, unit) = v.split_at(v.find(|c: char| !c.is_ascii_digit()).unwrap_or(v.len()));
+    let n: u64 = num.parse().ok()?;
+    let secs = match unit {
+        "s" | "" => n,
+        "m" => n.checked_mul(60)?,
+        "h" => n.checked_mul(3600)?,
+        "d" => n.checked_mul(86_400)?,
+        _ => return None,
+    };
+    Some(std::time::Duration::from_secs(secs))
 }
 
 #[cfg(test)]
@@ -756,6 +757,19 @@ mod tests {
         assert!(q.matches(&old, 999_999_999));
         assert!(!q.matches(&old, 2_000_000_000));
         assert!(m("age:5m", &old));
+    }
+
+    #[test]
+    fn durations() {
+        use std::time::Duration;
+        assert_eq!(parse_duration("30s"), Some(Duration::from_secs(30)));
+        assert_eq!(parse_duration("90"), Some(Duration::from_secs(90)));
+        assert_eq!(parse_duration("5m"), Some(Duration::from_secs(300)));
+        assert_eq!(parse_duration("2h"), Some(Duration::from_secs(7200)));
+        assert_eq!(parse_duration("1d"), Some(Duration::from_secs(86_400)));
+        for bad in ["", "m", "5x", "-1m", "1.5m"] {
+            assert_eq!(parse_duration(bad), None, "{bad}");
+        }
     }
 
     #[test]

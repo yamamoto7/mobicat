@@ -3,6 +3,7 @@ mod run;
 mod synth;
 
 use std::path::PathBuf;
+use std::time::Duration;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand, ValueEnum};
@@ -55,9 +56,19 @@ pub struct Cli {
     #[arg(long)]
     pub launch: bool,
 
-    /// Start with new lines only (default: include the last 5 minutes on Android).
+    /// Start with new lines only (default: include the last 5 minutes).
     #[arg(long)]
     pub clear: bool,
+
+    /// Print the logs of the last DURATION (30s, 5m, 1h) and exit. With
+    /// --for, keep following after that. Prints lines unless --json is given.
+    #[arg(long, value_name = "DURATION", value_parser = duration, conflicts_with_all = ["clear", "launch", "file"])]
+    pub last: Option<Duration>,
+
+    /// Follow for DURATION (30s, 5m), then exit. For example after --launch,
+    /// to capture a startup. Prints lines unless --json is given.
+    #[arg(long = "for", value_name = "DURATION", value_parser = duration, conflicts_with = "file")]
+    pub follow_for: Option<Duration>,
 
     /// Read a saved log (logcat text or `log stream` ndjson). `-` reads stdin.
     #[arg(long, value_name = "PATH", conflicts_with = "launch")]
@@ -105,7 +116,32 @@ fn main() -> Result<()> {
     }
 }
 
+fn duration(v: &str) -> Result<Duration, String> {
+    mobicat_core::query::parse_duration(v)
+        .filter(|d| !d.is_zero())
+        .ok_or_else(|| format!("expected a duration like 30s, 5m or 1h, not `{v}`"))
+}
+
 impl Cli {
+    /// Output goes to stdout instead of the TUI.
+    pub fn scripted(&self) -> bool {
+        self.json || self.plain || self.last.is_some() || self.follow_for.is_some()
+    }
+
+    /// Print what is there and exit, without following.
+    pub fn dump(&self) -> bool {
+        self.last.is_some() && self.follow_for.is_none()
+    }
+
+    /// How far back to start.
+    pub fn backlog(&self, default: Duration) -> Duration {
+        match self.last {
+            Some(d) => d,
+            None if self.clear || self.launch || self.follow_for.is_some() => Duration::ZERO,
+            None => default,
+        }
+    }
+
     pub fn file_path(&self) -> Option<Option<PathBuf>> {
         self.file
             .as_ref()

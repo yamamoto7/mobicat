@@ -168,6 +168,8 @@ pub struct AndroidStream {
     pub backlog: Duration,
     /// Tags hidden by app-only.
     pub noise: Arc<Noise>,
+    /// Print what is already there (the backlog) and stop, like `logcat -d`.
+    pub dump: bool,
 }
 
 /// `-T` argument in epoch form.
@@ -232,6 +234,9 @@ pub async fn stream(cfg: AndroidStream, tx: mpsc::Sender<Entry>) {
             "-T",
             &epoch_arg(since),
         ]);
+        if cfg.dump {
+            cmd.arg("-d");
+        }
         let mut s = match proc::spawn_stream(cmd) {
             Ok(s) => s,
             Err(e) => {
@@ -298,6 +303,15 @@ pub async fn stream(cfg: AndroidStream, tx: mpsc::Sender<Entry>) {
 
         let stderr = s.finish().await;
         let at = last_ns.max(since);
+        if cfg.dump {
+            let why = stderr.lines().next().unwrap_or("").trim();
+            if !why.is_empty() && last_ns == i64::MIN {
+                let _ = tx
+                    .send(note(Level::Error, at, format!("{}: {why}", cfg.serial)))
+                    .await;
+            }
+            return;
+        }
         if looks_like_unsupported_uid(&stderr) {
             let msg = format!(
                 "{}: logcat on this device does not support --uid (older Android). Not supported yet.",

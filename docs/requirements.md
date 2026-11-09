@@ -33,7 +33,9 @@ mobicat [APP_ID ...] [flags]
 | `-p, --profile <NAME>` | Use a saved filter from the config file |
 | `--all` | Turn off filtering to the app's own logs (app-only) |
 | `--launch` | The tool relaunches the app and also captures stdout/stderr (iOS. §4.2) |
-| `--clear` | Do not read past logs at start (default: Android reads the last 5 minutes. logcat's count option is applied before `--uid`, so we specify a time instead. Past logs on iOS are not supported) |
+| `--clear` | Do not read past logs at start (default: the last 5 minutes. logcat's count option is applied before `--uid`, so we specify a time instead. iOS uses `log show`, which keeps Info and above, not Debug) |
+| `--last <DURATION>` | Print the logs of the last DURATION (`30s`, `5m`, `1h`) in time order and exit (Android `logcat -d`, iOS `log show`). With `--for`, keep following after that. For scripts and agents |
+| `--for <DURATION>` | Follow for DURATION, then exit. Starts with new lines only unless `--last` is given. With `--launch`, captures a startup |
 | `--file <PATH>` / `-` | Read from a file or stdin. Format is auto-detected |
 | `--color auto\|always\|never` | Also respects `NO_COLOR` |
 
@@ -198,6 +200,7 @@ age:5m
 
 - `--json`: one object per line. Keys match §3. `schema` holds a version number, bumped on breaking changes.
 - `--plain`: same as the TUI's one-line layout. `--query`, `--profile`, and `--all` work in both.
+- `--last` and `--for` print without the TUI and exit, so a coding agent can run mobicat like any command. They print `--plain` lines unless `--json` is given.
 - Copy and save pass the message as-is, without padding or wrapping. The clipboard uses OSC52, falling back to `pbcopy` / `wl-copy` / `xclip`.
 
 ## 11. Config file

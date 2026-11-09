@@ -314,11 +314,8 @@ async fn plan(cli: &Cli, s: &Settings) -> Result<(Vec<Planned>, Vec<String>)> {
         bail!("give an app ID, e.g. `mobicat com.example.app`, or set `app` in .mobicat.toml");
     }
     let wanted = |id: &str| cli.devices.is_empty() || cli.devices.iter().any(|d| d == id);
-    let backlog = if cli.clear || cli.launch {
-        Duration::ZERO
-    } else {
-        BACKLOG
-    };
+    let backlog = cli.backlog(BACKLOG);
+    let dump = cli.dump();
     let mut planned = Vec::new();
     let mut warnings = Vec::new();
     let mut checked = Vec::new();
@@ -346,6 +343,7 @@ async fn plan(cli: &Cli, s: &Settings) -> Result<(Vec<Planned>, Vec<String>)> {
                             uid,
                             backlog,
                             noise: s.noise.clone(),
+                            dump,
                         },
                     }),
                     Ok(None) => warnings.push(format!("{pkg} is not installed on {}", d.serial)),
@@ -369,7 +367,12 @@ async fn plan(cli: &Cli, s: &Settings) -> Result<(Vec<Planned>, Vec<String>)> {
             match iossim::app_info(&d.udid, bundle).await {
                 Ok(Some(app)) => planned.push(Planned::Ios {
                     label: d.name.clone(),
-                    cfg: SimStream { udid: d.udid, app },
+                    cfg: SimStream {
+                        udid: d.udid,
+                        app,
+                        backlog,
+                        dump,
+                    },
                 }),
                 Ok(None) => warnings.push(format!("{bundle} is not installed on {}", d.name)),
                 Err(e) => warnings.push(format!("{}: {e:#}", d.name)),
@@ -468,7 +471,7 @@ fn header(app: &str, planned: &[Planned]) -> String {
 /// "Change app…" in the TUI comes back here: pick another app and start again.
 pub fn logs(cli: &Cli) -> Result<()> {
     let base = settings(cli, config::load()?)?;
-    let interactive = !(cli.json || cli.plain) && io::stdout().is_terminal();
+    let interactive = !cli.scripted() && io::stdout().is_terminal();
     let mut chosen: Option<String> = None;
     let mut switching = false;
     loop {
@@ -524,17 +527,17 @@ fn session(cli: &Cli, mut s: Settings, interactive: bool) -> Result<bool> {
         android: s.android.clone(),
         ios: s.ios.clone(),
         only: cli.devices.clone(),
-        backlog: if cli.clear { Duration::ZERO } else { BACKLOG },
+        backlog: cli.backlog(BACKLOG),
         noise: s.noise.clone(),
     });
     start(&rt, planned, &tx, cli.launch);
     drop(tx);
 
-    let result = if cli.json || cli.plain {
+    let result = if cli.scripted() {
         for w in &warnings {
             eprintln!("mobicat: {w}");
         }
-        let color = cli.plain
+        let color = !cli.json
             && match cli.color {
                 ColorChoice::Always => true,
                 ColorChoice::Never => false,
@@ -542,7 +545,13 @@ fn session(cli: &Cli, mut s: Settings, interactive: bool) -> Result<bool> {
                     io::stdout().is_terminal() && std::env::var_os("NO_COLOR").is_none()
                 }
             };
-        rt.block_on(print(rx, cli.json, color, s.filter.clone()))
+        let how = Print {
+            json: cli.json,
+            color,
+            sorted: cli.dump(),
+            stop_after: cli.follow_for,
+        };
+        rt.block_on(print(rx, how, s.filter.clone()))
             .map(|()| false)
     } else {
         let opts = TuiOptions {
@@ -573,43 +582,67 @@ fn session(cli: &Cli, mut s: Settings, interactive: bool) -> Result<bool> {
     result
 }
 
-async fn print(
-    mut rx: mpsc::Receiver<Entry>,
+struct Print {
     json: bool,
     color: bool,
-    filter: Filter,
-) -> Result<()> {
+    /// Collect everything first and print it in time order (--last).
+    sorted: bool,
+    /// Stop after this long (--for).
+    stop_after: Option<Duration>,
+}
+
+async fn print(mut rx: mpsc::Receiver<Entry>, how: Print, filter: Filter) -> Result<()> {
     let clock = Clock::system();
     let mut out = io::BufWriter::new(io::stdout().lock());
     let mut batch = Vec::with_capacity(256);
-    loop {
+    let mut held: Vec<Entry> = Vec::new();
+    let deadline = how.stop_after.map(|d| tokio::time::Instant::now() + d);
+    let stop = async {
+        match deadline {
+            Some(at) => tokio::time::sleep_until(at).await,
+            None => std::future::pending().await,
+        }
+    };
+    tokio::pin!(stop);
+    let write = |out: &mut io::BufWriter<io::StdoutLock<'_>>, es: &[Entry]| -> io::Result<()> {
+        let now = now_ns();
+        for e in es {
+            if !filter.matches(e, now) || !script_wants(&filter, e, now) {
+                continue;
+            }
+            if how.json {
+                write_json(out, e, &clock)?;
+            } else {
+                write_plain(out, e, &clock, how.color)?;
+            }
+        }
+        out.flush()
+    };
+    let result = loop {
         batch.clear();
         let n = tokio::select! {
             n = rx.recv_many(&mut batch, 256) => n,
-            _ = tokio::signal::ctrl_c() => return Ok(()),
+            _ = tokio::signal::ctrl_c() => break Ok(()),
+            () = &mut stop => break Ok(()),
         };
         if n == 0 {
-            return Ok(()); // all sources finished (file input)
+            break Ok(()); // all sources finished (file input, --last)
         }
-        let now = now_ns();
-        let written = (|| -> io::Result<()> {
-            for e in &batch {
-                if !filter.matches(e, now) || !script_wants(&filter, e, now) {
-                    continue;
-                }
-                if json {
-                    write_json(&mut out, e, &clock)?;
-                } else {
-                    write_plain(&mut out, e, &clock, color)?;
-                }
-            }
-            out.flush()
-        })();
-        match written {
-            Ok(()) => {}
-            Err(e) if e.kind() == io::ErrorKind::BrokenPipe => return Ok(()),
-            Err(e) => return Err(e.into()),
+        if how.sorted {
+            held.append(&mut batch);
+            continue;
         }
+        if let Err(e) = write(&mut out, &batch) {
+            break Err(e);
+        }
+    };
+    let result = result.and_then(|()| {
+        held.sort_by_key(|e| e.time_ns);
+        write(&mut out, &held)
+    });
+    match result {
+        Err(e) if e.kind() != io::ErrorKind::BrokenPipe => Err(e.into()),
+        _ => Ok(()),
     }
 }
 
@@ -738,6 +771,7 @@ async fn watch_devices(store: mobicat_tui::SharedStore, w: Watch) {
                                 uid,
                                 backlog: w.backlog,
                                 noise: w.noise.clone(),
+                                dump: false,
                             },
                             w.tx.clone(),
                         ));
@@ -747,7 +781,15 @@ async fn watch_devices(store: mobicat_tui::SharedStore, w: Watch) {
                     let Some(bundle) = &w.ios else { continue };
                     if let Ok(Some(app)) = iossim::app_info(&key, bundle).await {
                         store.lock().expect("store lock").add_device(&key, p, &name);
-                        tokio::spawn(iossim::stream(SimStream { udid: key, app }, w.tx.clone()));
+                        tokio::spawn(iossim::stream(
+                            SimStream {
+                                udid: key,
+                                app,
+                                backlog: w.backlog,
+                                dump: false,
+                            },
+                            w.tx.clone(),
+                        ));
                     }
                 }
             }

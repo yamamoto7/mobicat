@@ -194,6 +194,65 @@ fn predicate(executable: &str) -> String {
 pub struct SimStream {
     pub udid: String,
     pub app: AppInfo,
+    /// How far back to start (`log show`). `Duration::ZERO` = only new lines.
+    pub backlog: Duration,
+    /// Print the backlog and stop.
+    pub dump: bool,
+}
+
+fn log_cmd(cfg: &SimStream, args: &[&str]) -> Command {
+    let mut cmd = simctl();
+    cmd.args(["spawn", &cfg.udid, "log"])
+        .args(args)
+        .args(["--style", "ndjson", "--predicate"])
+        .arg(predicate(&cfg.app.executable));
+    cmd
+}
+
+/// The first line of stderr that says something.
+fn reason(stderr: &str) -> String {
+    stderr
+        .lines()
+        .map(str::trim)
+        .find(|l| !l.is_empty() && !l.starts_with("getpwuid_r"))
+        .unwrap_or("")
+        .to_owned()
+}
+
+/// Turns `log` output into entries: a separator when the app restarts, and
+/// nothing at or before `after` (lines already delivered).
+struct Reader {
+    ctx: OsLogContext,
+    pids: HashSet<u32>,
+    annot: Annotator,
+    after: i64,
+    note: Box<dyn Fn(Level, String) -> Entry + Send>,
+}
+
+impl Reader {
+    /// Read until the process ends. Returns false when the receiver is gone.
+    async fn read(&mut self, s: &mut proc::Stream, tx: &mpsc::Sender<Entry>) -> bool {
+        while let Ok(Some(line)) = s.lines.next_line().await {
+            let Some(e) = oslog::parse_line(&line, &mut self.ctx) else {
+                continue;
+            };
+            if e.time_ns <= self.after {
+                continue;
+            }
+            self.after = e.time_ns;
+            if self.pids.insert(e.pid) && self.pids.len() > 1 {
+                let mut n = (self.note)(Level::Info, format!("process started (pid {})", e.pid));
+                n.time_ns = e.time_ns;
+                if tx.send(n).await.is_err() {
+                    return false;
+                }
+            }
+            if tx.send(self.annot.done(e)).await.is_err() {
+                return false;
+            }
+        }
+        true
+    }
 }
 
 /// Stream the app's logs until the receiver is dropped. Restarts the stream
@@ -201,68 +260,83 @@ pub struct SimStream {
 pub async fn stream(cfg: SimStream, tx: mpsc::Sender<Entry>) {
     let device: Arc<str> = Arc::from(cfg.udid.as_str());
     let app_id: Arc<str> = Arc::from(cfg.app.bundle_id.as_str());
-    let note = |level: Level, msg: String| {
-        Entry::system(
-            Platform::Ios,
-            device.clone(),
-            Some(app_id.clone()),
-            now_ns(),
-            level,
-            msg,
-        )
+    let note = {
+        let (device, app_id) = (device.clone(), app_id.clone());
+        move |level: Level, msg: String| {
+            Entry::system(
+                Platform::Ios,
+                device.clone(),
+                Some(app_id.clone()),
+                now_ns(),
+                level,
+                msg,
+            )
+        }
     };
-    let mut ctx = OsLogContext::new(device.clone(), Some(cfg.app.clone()));
-    let mut pids: HashSet<u32> = HashSet::new();
-    let annot = Annotator::default();
+    let mut r = Reader {
+        ctx: OsLogContext::new(device.clone(), Some(cfg.app.clone())),
+        pids: HashSet::new(),
+        annot: Annotator::default(),
+        after: i64::MIN,
+        note: Box::new(note.clone()),
+    };
+    let fail = |e: anyhow::Error| note(Level::Error, format!("{e:#}"));
 
-    loop {
-        let mut cmd = simctl();
-        cmd.args([
-            "spawn",
-            &cfg.udid,
-            "log",
-            "stream",
-            "--style",
-            "ndjson",
-            "--level",
-            "debug",
-            "--predicate",
-        ])
-        .arg(predicate(&cfg.app.executable));
-        let mut s = match proc::spawn_stream(cmd) {
-            Ok(s) => s,
+    // Start following before reading the backlog, so nothing falls between.
+    let mut live = if cfg.dump {
+        None
+    } else {
+        match proc::spawn_stream(log_cmd(&cfg, &["stream", "--level", "debug"])) {
+            Ok(s) => Some(s),
             Err(e) => {
-                let _ = tx.send(note(Level::Error, format!("{e:#}"))).await;
-                return;
-            }
-        };
-        loop {
-            let line = match s.lines.next_line().await {
-                Ok(Some(l)) => l,
-                Ok(None) | Err(_) => break,
-            };
-            let Some(e) = oslog::parse_line(&line, &mut ctx) else {
-                continue;
-            };
-            if pids.insert(e.pid) && pids.len() > 1 {
-                let msg = format!("process started (pid {})", e.pid);
-                let mut n = note(Level::Info, msg);
-                n.time_ns = e.time_ns;
-                if tx.send(n).await.is_err() {
-                    return;
-                }
-            }
-            if tx.send(annot.done(e)).await.is_err() {
+                let _ = tx.send(fail(e)).await;
                 return;
             }
         }
-        let stderr = s.finish().await;
-        let why = stderr
-            .lines()
-            .map(str::trim)
-            .find(|l| !l.is_empty() && !l.starts_with("getpwuid_r"))
-            .unwrap_or("")
-            .to_owned();
+    };
+    if !cfg.backlog.is_zero() {
+        let since = now_ns() - i64::try_from(cfg.backlog.as_nanos()).unwrap_or(i64::MAX);
+        let start = format!("@{}", since.div_euclid(1_000_000_000));
+        r.after = since - 1;
+        match proc::spawn_stream(log_cmd(
+            &cfg,
+            &["show", "--info", "--debug", "--start", &start],
+        )) {
+            Ok(mut s) => {
+                if !r.read(&mut s, &tx).await {
+                    return;
+                }
+                let why = reason(&s.finish().await);
+                if !why.is_empty() && r.pids.is_empty() {
+                    let _ = tx
+                        .send(note(Level::Error, format!("log show: {why}")))
+                        .await;
+                }
+            }
+            Err(e) => {
+                let _ = tx.send(fail(e)).await;
+            }
+        }
+    }
+    if cfg.dump {
+        return;
+    }
+
+    loop {
+        let mut s = match live.take() {
+            Some(s) => s,
+            None => match proc::spawn_stream(log_cmd(&cfg, &["stream", "--level", "debug"])) {
+                Ok(s) => s,
+                Err(e) => {
+                    let _ = tx.send(fail(e)).await;
+                    return;
+                }
+            },
+        };
+        if !r.read(&mut s, &tx).await {
+            return;
+        }
+        let why = reason(&s.finish().await);
         let msg = if why.is_empty() {
             "log stream ended; retrying".to_owned()
         } else {
