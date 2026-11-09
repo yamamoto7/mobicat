@@ -1,3 +1,5 @@
+<img src="docs/assets/logo/mobicat-240.png" width="96" alt="mobicat のロゴ">
+
 # mobicat
 
 [![CI](https://github.com/yamamoto7/mobicat/actions/workflows/ci.yml/badge.svg)](https://github.com/yamamoto7/mobicat/actions/workflows/ci.yml)
