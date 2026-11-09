@@ -93,5 +93,5 @@ On Claude Code before 2.1.275, add the marketplace first:
 The plugin does not install the `mobicat` command itself; see
 [Install](../README.md#install).
 
-For other agents, copy the commands above into your `AGENTS.md` or the agent's
-instructions.
+For other agents, copy the commands at the top of this page into your
+`AGENTS.md` or the agent's instructions.

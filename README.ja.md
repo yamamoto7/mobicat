@@ -3,36 +3,36 @@
 [![CI](https://github.com/yamamoto7/mobicat/actions/workflows/ci.yml/badge.svg)](https://github.com/yamamoto7/mobicat/actions/workflows/ci.yml)
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
-**Android と iOS のアプリのログを、1つのターミナル画面で。**
+**Android と iOS のログを、1つの道具で。同じキー、同じ絞り込みで、ターミナルから。**
 
-Android の端末とエミュレータ、iOS シミュレータのログを時刻順に1本にまとめ、自分のアプリのログだけを表示します。アプリを再起動しても追い続け、クラッシュは目立つように出します。
+mobicat は、Android の端末とエミュレータ、iOS シミュレータから、自分のアプリのログだけを表示します。OS が出すノイズは出しません。クラッシュはスタックトレースごと、目立つように出します。どちらの OS でも使い方は同じなので、覚えるのは一度だけです。コーディングエージェントからも使えます。
 
 [English](README.md)
 
-![Android エミュレータと iOS シミュレータのログを mobicat で並べて見ている様子。クラッシュが赤く目立っている](docs/assets/demo.gif)
+![サンプルアプリを Android エミュレータと iOS シミュレータで動かし、mobicat でログを見ている様子。クラッシュが赤く目立っている](docs/assets/demo.gif)
 
 ## なぜ mobicat か
 
-Android と iOS の両方に出すアプリ（React Native、Flutter、Kotlin Multiplatform、Capacitor、または2つのネイティブアプリ）では、ログが2か所に分かれます。Android Studio の Logcat と、Xcode のコンソールです。どちらも片方の OS しか映さず、OS が出すノイズも多く混ざります。
-
-mobicat は、両方を1つのターミナルにまとめます。
+- **両方の OS で作っているなら**：Android Studio の Logcat と Xcode のコンソールは、別々の道具で、絞り込みの書き方も違います。mobicat なら1つで済みます。`Tab` で Pixel と iPhone を切り替えられ、同じ絞り込みが両方に効きます。
+- **iOS だけなら**：シミュレータには pidcat にあたるものがありません。`log stream --predicate` を手で書く代わりに、`mobicat com.example.app` で済みます。
+- **AI エージェントと開発しているなら**：エージェントにも同じものを見せられます。`mobicat com.example.app --last 5m` は直近のログを出して終わるので、Claude Code や Codex、Cursor がクラッシュを読んで直せます。
 
 |  | mobicat | Android Studio の Logcat | Xcode のコンソール | pidcat |
 |---|:-:|:-:|:-:|:-:|
 | Android | ✓ | ✓ | | ✓ |
 | iOS シミュレータ | ✓ | | ✓ | |
-| Android と iOS を1画面で | ✓ | | | |
+| Android と iOS で同じ道具・同じ絞り込み | ✓ | | | |
 | ターミナルで動く（SSH 越しでも） | ✓ | | | ✓ |
-| スクリプトや AI エージェント向けの JSON 出力 | ✓ | | | |
+| コーディングエージェント向け（ログを出して終わる、JSON） | ✓ | | | |
 
 ## 特徴
 
-- **両方の OS を1画面に**：つながっているすべての Android 端末と起動中のシミュレータのログを、1本の流れで表示します。`Tab` で「All」「OS ごと」「端末ごと」を切り替えられます。
 - **自分のアプリだけ**：Android はアプリの UID、iOS は実行ファイルでログを取ります。OS が出すノイズは最初から隠します（`a` で全部表示）。再起動しても見失わず、`── process started (pid N) ──` の行で区切ります。
-- **クラッシュが目立つ**：Java / Kotlin の例外、ネイティブのクラッシュ、Swift の Fatal error、キャッチされなかった例外を、スタックトレースごと赤い `✖ CRASH` の塊にまとめます。見ていない端末で起きたクラッシュは、その端末のタブに印が付きます。
+- **クラッシュが目立つ**：Java / Kotlin の例外、ネイティブのクラッシュ、Swift の Fatal error、キャッチされなかった例外を、スタックトレースごと赤い `✖ CRASH` の塊にまとめます。`]c` で次のクラッシュへ飛べます。見ていない端末で起きたクラッシュは、その端末のタブに印が付きます。
+- **両方の OS で同じ使い方**：つながっているすべての Android 端末と起動中のシミュレータで、キーも絞り込みの書き方もクラッシュの見え方も同じです。`Tab` で切り替え、All タブでまとめて見られます。
+- **コーディングエージェントから使える**：`--last 5m` と `--for 30s` はログを出して終わります。1行ずつのテキストか、NDJSON（`--json`）で出せます。[Claude Code のプラグイン](docs/agents.md#claude-code-plugin)を入れると、Claude がいつ使えばよいかを覚えます。詳しくは [Using mobicat from a coding agent](docs/agents.md)（英語）を見てください。
 - **Android Studio と同じ絞り込みの書き方**：`tag:OkHttp level:warn -tag:Chatty` に加えて、`subsystem:`、`os:`、`fw:rn`、`age:5m` なども使えます。打つたびに結果が変わり、補完と履歴もあります。
 - **クロスプラットフォームのフレームワーク**：React Native、Flutter、Kotlin Multiplatform、Capacitor のログを見分けます（クエリの `fw:`）。
-- **スクリプトから使える**：`--json` で NDJSON、`--plain` で1行ずつ出力します。`jq` や CI、AI エージェントから使えます。
 
 ## インストール
 
@@ -58,6 +58,12 @@ cargo install --locked --git https://github.com/yamamoto7/mobicat mobicat
 - Android：`adb`（Android SDK の platform-tools）に `PATH` が通っていること
 - iOS：macOS と Xcode（`xcrun simctl`）。今はシミュレータだけで、iOS の実機にはまだ対応していません。
 
+Claude Code では、プラグインを入れると mobicat を使う skill が加わります（先に mobicat 本体を入れてください）。
+
+```
+/plugin install mobicat --marketplace yamamoto7/mobicat
+```
+
 ## 使い方
 
 ```sh
@@ -73,8 +79,14 @@ mobicat --android com.example.app --ios com.example.App
 # アプリを起動し直して、起動直後のログから取る（iOS は print() の出力も取る）
 mobicat com.example.app --launch
 
+# 直近5分のログを出して終わる（スクリプトやエージェント向け）
+mobicat com.example.app --last 5m
+
 # クラッシュだけを JSON で
-mobicat com.example.app --json -q 'is:crash' | jq -r .message
+mobicat com.example.app --last 10m --json -q 'is:crash' | jq -r .message
+
+# アプリを起動し直して、起動から20秒のログを取る
+mobicat com.example.app --launch --for 20s
 
 # 保存したログを読む（logcat のテキストか log stream の ndjson）
 mobicat --file saved.log
@@ -148,18 +160,22 @@ keep = ["Choreographer"]    # 既定で隠す tag を表示に戻す
 - **iOS シミュレータ**：`xcrun simctl spawn <udid> log stream --style ndjson` を、アプリの実行ファイルで絞って使います。`.app` の中のコードが出した行、subsystem が bundle ID で始まる行、React Native の行、Swift の実行時ライブラリの行を、アプリ自身のログとして扱います。
 - 複数行のメッセージ（スタックトレース）は1件にまとめ、OS ごとのクラッシュの形に印を付けます。
 
-詳しくは、[requirements](docs/requirements.md)、[architecture](docs/architecture.md)、[technical notes](docs/technical-notes.md)（いずれも英語）を見てください。
+詳しくは、[requirements](docs/requirements.md)、[architecture](docs/architecture.md)、[technical notes](docs/technical-notes.md)、[coding agents](docs/agents.md)（いずれも英語）を見てください。
 
 ## 今後の予定
 
+アプリがどこで動いていても、そのログを拾えるようにしていきます。
+
 - iOS の実機への対応
+- 扱えるログを増やす（iOS のクラッシュレポート、Android のバグレポートなど）
+- MCP を使いたいエージェント向けの MCP サーバー
 - 最初のリリースで、ビルド済みのバイナリと Homebrew の formula を出す
 
 アイデアや不具合の報告は [issues](https://github.com/yamamoto7/mobicat/issues) へどうぞ。日本語でもかまいません。
 
 ## 開発に参加する
 
-[CONTRIBUTING.md](CONTRIBUTING.md) を見てください（英語）。上のデモは、[`demo/`](demo/README.md) のサンプルアプリとスクリプトで撮っています。
+[CONTRIBUTING.md](CONTRIBUTING.md) を見てください（英語）。上のデモは、[`demo/`](demo/README.md) にあるサンプルアプリ Shelf と、同じ場所のスクリプトで撮っています。
 
 ## 謝辞
 

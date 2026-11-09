@@ -3,36 +3,36 @@
 [![CI](https://github.com/yamamoto7/mobicat/actions/workflows/ci.yml/badge.svg)](https://github.com/yamamoto7/mobicat/actions/workflows/ci.yml)
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
-**Android and iOS app logs in one terminal UI.**
+**One log viewer for Android and iOS. Same keys, same filters, in your terminal.**
 
-mobicat streams logs from Android devices and emulators and from iOS simulators, merges them in time order, and shows only your app's own logs. It keeps following the app across restarts and makes crashes hard to miss.
+mobicat shows only your app's logs from Android devices, emulators and iOS simulators, with the system noise left out. Crashes come first, with the whole stack trace. It works the same on both platforms, so you learn it once. Your coding agent can use it too.
 
 [日本語](README.ja.md)
 
-![mobicat showing logs from an Android emulator and an iOS simulator side by side, with a crash highlighted](docs/assets/demo.gif)
+![mobicat following a sample app on an Android emulator and an iOS simulator, with a crash highlighted](docs/assets/demo.gif)
 
 ## Why mobicat
 
-If you build an app for both Android and iOS (React Native, Flutter, Kotlin Multiplatform, Capacitor, or two native apps), its logs live in two places: Logcat in Android Studio and the console in Xcode. Each shows one platform, and each is full of system noise.
-
-mobicat puts both in one terminal:
+- **Building for both platforms?** Logcat and the Xcode console are two tools with two ways to filter. mobicat is one: press `Tab` to switch between your Pixel and your iPhone, and the same filter works on both.
+- **iOS only?** The simulator has no pidcat. You can write `log stream --predicate` by hand, or run `mobicat com.example.app`.
+- **Working with an AI agent?** Give it the same view. `mobicat com.example.app --last 5m` prints what happened and exits, so Claude Code, Codex or Cursor can read the crash and fix it.
 
 |  | mobicat | Android Studio Logcat | Xcode console | pidcat |
 |---|:-:|:-:|:-:|:-:|
 | Android | ✓ | ✓ | | ✓ |
 | iOS simulator | ✓ | | ✓ | |
-| Android and iOS in one view | ✓ | | | |
+| Same tool and filters on Android and iOS | ✓ | | | |
 | Runs in a terminal, works over SSH | ✓ | | | ✓ |
-| JSON output for scripts and AI agents | ✓ | | | |
+| Made for coding agents (exits with the logs, JSON) | ✓ | | | |
 
 ## Features
 
-- **Both platforms in one view.** Logs from every connected Android device and booted simulator, in one timeline. Switch between All, one OS, or one device with `Tab`.
 - **Your app only.** Android logs are taken by the app's UID, iOS logs by its executable. System noise is hidden by default (`a` shows everything). Restarts don't lose the app; a `── process started (pid N) ──` line marks them.
-- **Crashes stand out.** Java/Kotlin exceptions, native crashes, Swift fatal errors and uncaught exceptions are grouped into one red `✖ CRASH` block with the stack trace. A crash on a device you aren't looking at shows up on its tab.
+- **Crashes stand out.** Java/Kotlin exceptions, native crashes, Swift fatal errors and uncaught exceptions are grouped into one red `✖ CRASH` block with the stack trace. `]c` jumps to the next one. A crash on a device you aren't looking at shows up on its tab.
+- **The same on both platforms.** One set of keys, one filter syntax and one crash view for every connected Android device and booted simulator. `Tab` switches between them; the All tab shows them together.
+- **Ready for coding agents.** `--last 5m` and `--for 30s` print and exit, as plain lines or NDJSON (`--json`). A [Claude Code plugin](docs/agents.md#claude-code-plugin) teaches Claude when to use them. See [Using mobicat from a coding agent](docs/agents.md).
 - **Android Studio filter syntax.** `tag:OkHttp level:warn -tag:Chatty`, plus `subsystem:`, `os:`, `fw:rn`, `age:5m` and more. Results update as you type, with completion and history.
 - **Cross-platform frameworks.** React Native, Flutter, Kotlin Multiplatform and Capacitor logs are recognized (`fw:` in queries).
-- **Scriptable.** `--json` prints NDJSON and `--plain` prints one line per entry, for `jq`, CI and AI agents.
 
 ## Install
 
@@ -58,6 +58,12 @@ You also need:
 - Android: `adb` (Android SDK platform-tools) on your `PATH`.
 - iOS: macOS with Xcode (`xcrun simctl`). Simulators only for now; physical iOS devices are not supported yet.
 
+For Claude Code, the plugin adds a skill that runs mobicat for you (install the command first):
+
+```
+/plugin install mobicat --marketplace yamamoto7/mobicat
+```
+
 ## Usage
 
 ```sh
@@ -73,8 +79,14 @@ mobicat --android com.example.app --ios com.example.App
 # Restart the app and capture its startup (on iOS, also print() output)
 mobicat com.example.app --launch
 
+# The last 5 minutes, then exit (for scripts and agents)
+mobicat com.example.app --last 5m
+
 # Only crashes, as JSON
-mobicat com.example.app --json -q 'is:crash' | jq -r .message
+mobicat com.example.app --last 10m --json -q 'is:crash' | jq -r .message
+
+# Restart the app and capture its startup for 20 seconds
+mobicat com.example.app --launch --for 20s
 
 # Read a saved log (logcat text or `log stream` ndjson)
 mobicat --file saved.log
@@ -148,18 +160,22 @@ keep = ["Choreographer"]    # show a tag hidden by default
 - **iOS simulator:** `xcrun simctl spawn <udid> log stream --style ndjson` filtered by the app's executable. A line is the app's own when it comes from code inside the `.app` bundle, from a subsystem that starts with the bundle ID, from React Native, or from the Swift runtime.
 - Multi-line messages (stack traces) are grouped into one entry, and crash patterns for each platform are marked.
 
-More detail: [requirements](docs/requirements.md), [architecture](docs/architecture.md), [technical notes](docs/technical-notes.md).
+More detail: [requirements](docs/requirements.md), [architecture](docs/architecture.md), [technical notes](docs/technical-notes.md), [coding agents](docs/agents.md).
 
 ## Roadmap
 
+mobicat should pick up your app's logs wherever it runs.
+
 - Physical iOS devices
+- More kinds of logs, such as iOS crash reports and Android bug reports
+- An MCP server for agents that prefer one
 - Prebuilt binaries and a Homebrew formula with the first release
 
 Ideas and bug reports are welcome in [issues](https://github.com/yamamoto7/mobicat/issues).
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). The demo above is recorded from a sample app with the scripts in [`demo/`](demo/README.md).
+See [CONTRIBUTING.md](CONTRIBUTING.md). The demo above is recorded with Shelf, a sample app in [`demo/`](demo/README.md), and the scripts next to it.
 
 ## Acknowledgements
 
