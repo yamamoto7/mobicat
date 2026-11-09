@@ -140,7 +140,21 @@ fn is_app_only(r: &Record, app: &AppInfo) -> bool {
         || (!r.sender_image_uuid.is_empty() && r.sender_image_uuid == r.process_image_uuid)
 }
 
+/// Where simulators install apps, one directory (a UUID) per install.
+const INSTALLS: &str = "/Containers/Bundle/Application/";
+
+/// Whether `path` is inside the app bundle `dir`. `log show` can report the
+/// directory of an earlier install of the same binary, so the install
+/// directory is not compared.
 fn is_inside(path: &str, dir: &str) -> bool {
+    fn in_bundle(p: &str) -> Option<&str> {
+        let rest = &p[p.find(INSTALLS)? + INSTALLS.len()..];
+        Some(&rest[rest.find('/')?..])
+    }
+    let (path, dir) = match (in_bundle(path), in_bundle(dir)) {
+        (Some(p), Some(d)) => (p, d),
+        _ => (path, dir),
+    };
     path.len() > dir.len() && path.starts_with(dir) && path.as_bytes()[dir.len()] == b'/'
 }
 
@@ -159,6 +173,18 @@ fn parse_timestamp(s: &str) -> Option<i64> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn earlier_installs_are_the_same_app() {
+        let app = "/S/Devices/D/data/Containers/Bundle/Application/NEW/Shelf.app";
+        let old = "/S/Devices/D/data/Containers/Bundle/Application/OLD/Shelf.app/Shelf";
+        assert!(is_inside(old, app));
+        assert!(is_inside(&format!("{app}/Shelf"), app));
+        let other = "/S/Devices/D/data/Containers/Bundle/Application/OLD/Shelfie.app/Shelfie";
+        assert!(!is_inside(other, app));
+        assert!(!is_inside("/usr/lib/libobjc.A.dylib", app));
+        assert!(is_inside("/x/My.app/My", "/x/My.app"));
+    }
+
     use super::*;
 
     const APP_PATH: &str = "/Users/dev/Library/Developer/CoreSimulator/Devices/42177705-0307-42BA-B39E-8153FD6D932D/data/Containers/Bundle/Application/FB5BC8B4-9FC9-4080-BE7F-711AE66AD299/ExampleApp.app";
