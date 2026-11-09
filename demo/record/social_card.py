@@ -1,10 +1,11 @@
-import sys
 """Render docs/assets/social-preview.png (GitHub social preview, 1280x640).
 
 Usage: python3 demo/record/social_card.py FRAME.png docs/assets/social-preview.png
 FRAME.png is a 1920x1080 frame of the demo video, e.g.
 ffmpeg -ss 50 -i demo/out/mobicat-demo.mp4 -frames:v 1 frame.png
 """
+import sys
+
 from PIL import Image, ImageDraw, ImageFont
 src, out = sys.argv[1], sys.argv[2]
 W, H = 1280, 640
