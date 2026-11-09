@@ -100,6 +100,8 @@ mod ansi {
     pub const YELLOW: &str = "\x1b[33m";
     pub const RED: &str = "\x1b[31m";
     pub const FATAL: &str = "\x1b[1;37;41m";
+    /// Fatal messages: a background behind long text is hard to read.
+    pub const BOLD_RED: &str = "\x1b[1;31m";
 }
 
 fn level_color(l: Level) -> &'static str {
@@ -145,7 +147,9 @@ pub fn write_plain(w: &mut impl Write, e: &Entry, clock: &Clock, color: bool) ->
         Platform::Ios => ansi::MAGENTA,
     };
     let lc = level_color(e.level);
-    let (mc, mr) = if e.level >= Level::Error {
+    let (mc, mr) = if e.level == Level::Fatal {
+        (ansi::BOLD_RED, ansi::RESET)
+    } else if e.level >= Level::Error {
         (lc, ansi::RESET)
     } else {
         ("", "")
