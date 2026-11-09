@@ -10,7 +10,7 @@ homepage.workspace = true
 readme = "../../README.md"
 keywords = ["android", "ios", "logcat", "tui", "logs"]
 categories = ["command-line-utilities", "development-tools::debugging"]
-description = "Android and iOS app logs in one terminal UI"
+description = "One log viewer for Android and iOS: your app's logs only, crashes with stack traces, the same keys and filters on both"
 
 [dependencies]
 anyhow = "1.0.104"
