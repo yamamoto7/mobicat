@@ -17,15 +17,15 @@ APP = "com.example.shelf"
 
 TIMELINE = [
     # 1. Title (drawn by compose.py over the first seconds)
-    (4.0, "caption", "Android and iOS app logs, in one terminal.", 3.8),
+    (4.0, "caption", "Shelf, a sample app, runs on both phones.", 3.8),
     # 2. Pick the app
     (4.2, "type", "mobicat"),
     (5.3, "key", "Enter", "⏎"),
     (8.0, "caption", "Run mobicat and pick your app.", 4.0),
     (8.4, "type", "sh"),
     (10.0, "key", "Enter", "⏎"),
-    # 3. Logs from both phones, one timeline
-    (11.0, "caption", "Both phones, one timeline. Only your app's logs.", 10.5),
+    # 3. One tool for both phones
+    (11.0, "caption", "One tool for both phones. Only your app's logs.", 10.5),
     (12.0, "android", "add?item=0"),
     (13.2, "ios", "add1"),
     (14.6, "android", "add?item=3"),
@@ -33,7 +33,7 @@ TIMELINE = [
     (17.6, "android", "sync"),
     (19.2, "ios", "add4"),
     # 4. Filter
-    (22.0, "caption", "Filter as you type, with completion.", 10.0),
+    (22.0, "caption", "One filter for both, as you type.", 10.0),
     (22.2, "key", "/", "/"),
     (22.8, "type", "lev"),
     (23.6, "key", "Tab", "Tab"),
@@ -67,13 +67,12 @@ TIMELINE = [
     (69.6, "key", "y", "y"),
     (71.8, "key", "Escape", "Esc"),
     (72.6, "key", "Escape", "Esc"),
-    # 9. Script it
+    # 9. For coding agents
     (74.0, "key", "C-c", "^C"),
     (74.5, "key", "C-c", "^C"),
-    (74.8, "caption", "Script it: JSON for CI and agents.", 10.0),
-    (75.4, "type", f"mobicat {APP} --json -q is:crash | jq -r .message"),
-    (79.0, "key", "Enter", "⏎"),
-    (85.0, "key", "C-c", "^C"),
+    (74.8, "caption", "Your coding agent gets the same logs. --last prints and exits.", 10.2),
+    (75.4, "type", f"mobicat {APP} --last 2m -q is:crash"),
+    (78.6, "key", "Enter", "⏎"),
 ]
 
 # 10. Outro card

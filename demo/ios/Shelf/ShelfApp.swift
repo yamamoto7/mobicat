@@ -160,7 +160,15 @@ struct ContentView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Shelf").font(.system(size: 34, weight: .bold)).foregroundStyle(ink)
+            // A sample app for mobicat's demo; the badge says so on screen.
+            HStack {
+                Text("Shelf").font(.system(size: 34, weight: .bold)).foregroundStyle(ink)
+                Spacer()
+                Text("SAMPLE APP").font(.system(size: 12, weight: .bold)).tracking(1)
+                    .foregroundStyle(Color(red: 122 / 255, green: 74 / 255, blue: 0))
+                    .padding(.horizontal, 10).padding(.vertical, 5)
+                    .background(Color(red: 1, green: 224 / 255, blue: 160 / 255), in: Capsule())
+            }
             Text(model.cart.isEmpty ? "Cart · 0 items" : "Cart · \(plural(model.cart.count)) · \(money(model.total))")
                 .font(.system(size: 16)).foregroundStyle(muted)
                 .padding(.top, 4).padding(.bottom, 16)

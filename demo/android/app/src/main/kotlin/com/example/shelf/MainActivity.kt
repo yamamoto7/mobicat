@@ -138,11 +138,28 @@ class MainActivity : Activity() {
             setBackgroundColor(Color.rgb(246, 247, 245))
             setPadding(dp(20), dp(48), dp(20), dp(24))
         }
-        root.addView(TextView(this).apply {
-            text = "Shelf"
-            textSize = 30f
-            typeface = Typeface.DEFAULT_BOLD
-            setTextColor(INK)
+        // A sample app for mobicat's demo; the badge says so on screen.
+        root.addView(LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            addView(TextView(this@MainActivity).apply {
+                text = "Shelf"
+                textSize = 30f
+                typeface = Typeface.DEFAULT_BOLD
+                setTextColor(INK)
+            }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+            addView(TextView(this@MainActivity).apply {
+                text = "SAMPLE APP"
+                textSize = 12f
+                letterSpacing = 0.08f
+                typeface = Typeface.DEFAULT_BOLD
+                setTextColor(Color.rgb(122, 74, 0))
+                setPadding(dp(10), dp(5), dp(10), dp(5))
+                background = GradientDrawable().apply {
+                    cornerRadius = dp(99).toFloat()
+                    setColor(Color.rgb(255, 224, 160))
+                }
+            })
         })
         cartLabel = TextView(this).apply {
             text = "Cart · 0 items"

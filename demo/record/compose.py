@@ -61,8 +61,10 @@ def background(phone_boxes):
         k = y / H
         d.line([(0, y), (W, y)], fill=tuple(int(a + (b - a) * k) for a, b in zip(BG_TOP, BG_BOTTOM)))
     f = font(SANS, 22, 500)
+    small = font(SANS, 18, 500)
     for (x, y, w, h), (_, label, _) in zip(phone_boxes, PHONES):
-        d.text((x + w / 2, y + h + 20), label, font=f, fill=MUTED, anchor="mt")
+        d.text((x + w / 2, y + h + 16), label, font=f, fill=MUTED, anchor="mt")
+        d.text((x + w / 2, y + h + 46), "Shelf · sample app", font=small, fill=(120, 128, 138), anchor="mt")
         # The phone body; the screen is drawn on top by ffmpeg.
         body = rounded((w, h), 54, (36, 40, 48, 255))
         im.paste(body, (x, y), body)
@@ -155,7 +157,7 @@ def main():
     Image.new("RGBA", (W, 80), (0, 0, 0, 0)).save(kblank)
     sequence(work / "keys.txt", keys, kblank, END)
 
-    card(work / "title.png", "mobicat", [("Android and iOS app logs, in one terminal.", False)])
+    card(work / "title.png", "mobicat", [("One log viewer for Android and iOS.", False)])
     card(work / "outro.png", "mobicat", [
         ("cargo install --git https://github.com/yamamoto7/mobicat mobicat", True),
         ("github.com/yamamoto7/mobicat", True),
