@@ -6,6 +6,13 @@ All notable changes are listed here. The format follows
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-11-09
+
+### Fixed
+
+- The README's demo image and links on crates.io.
+- `cargo install --locked mobicat` in the install instructions (published to crates.io).
+
 ## [0.1.0] - 2026-11-09
 
 ### Added
@@ -23,5 +30,6 @@ All notable changes are listed here. The format follows
 - The last 5 minutes of logs on iOS too (`log show`), not only on Android.
 - Config files (`~/.config/mobicat/config.toml`, `.mobicat.toml`) with profiles.
 
-[Unreleased]: https://github.com/yamamoto7/mobicat/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/yamamoto7/mobicat/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/yamamoto7/mobicat/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/yamamoto7/mobicat/releases/tag/v0.1.0

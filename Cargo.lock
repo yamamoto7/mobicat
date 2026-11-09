@@ -910,7 +910,7 @@ dependencies = [
 
 [[package]]
 name = "mobicat"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "clap",
@@ -924,7 +924,7 @@ dependencies = [
 
 [[package]]
 name = "mobicat-core"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "jiff",
  "regex",
@@ -934,7 +934,7 @@ dependencies = [
 
 [[package]]
 name = "mobicat-sources"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "jiff",
@@ -947,7 +947,7 @@ dependencies = [
 
 [[package]]
 name = "mobicat-tui"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "base64 0.23.1",
