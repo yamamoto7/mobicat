@@ -13,7 +13,12 @@ use clap::{Parser, Subcommand, ValueEnum};
 /// Follows the app across restarts, shows only the app's own logs by default,
 /// and highlights crashes. Settings can live in .mobicat.toml (see `mobicat config`).
 #[derive(Parser)]
-#[command(name = "mobicat", version, args_conflicts_with_subcommands = true)]
+#[command(
+    name = "mobicat",
+    version,
+    args_conflicts_with_subcommands = true,
+    after_long_help = AGENT_HELP
+)]
 pub struct Cli {
     /// Package name / bundle ID. Used for both platforms unless --android / --ios is given.
     /// Without one, mobicat asks (or uses `app` from .mobicat.toml).
@@ -115,6 +120,15 @@ fn main() -> Result<()> {
         None => run::logs(&cli),
     }
 }
+
+const AGENT_HELP: &str = "\
+Scripts and coding agents:
+  mobicat com.example.app --last 5m                  what happened in the last 5 minutes, then exit
+  mobicat com.example.app --last 10m -q is:crash     only crashes, with their stack traces
+  mobicat com.example.app --last 5m -q level:warn    warnings and errors
+  mobicat com.example.app --launch --for 20s         restart the app and capture its startup
+  mobicat com.example.app --for 30s                  what happens while you try something
+  Add --json for NDJSON. On iOS, past logs have Info and above (the system does not keep Debug).";
 
 fn duration(v: &str) -> Result<Duration, String> {
     mobicat_core::query::parse_duration(v)

@@ -1,0 +1,10 @@
+{
+  "name": "mobicat",
+  "version": "0.1.0",
+  "description": "Read your app's Android and iOS logs and crashes with the mobicat CLI",
+  "author": { "name": "yamamoto7" },
+  "homepage": "https://github.com/yamamoto7/mobicat",
+  "repository": "https://github.com/yamamoto7/mobicat",
+  "license": "Apache-2.0",
+  "keywords": ["logs", "android", "ios", "logcat", "simulator", "crash"]
+}

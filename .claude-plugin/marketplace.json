@@ -1,0 +1,12 @@
+{
+  "name": "mobicat",
+  "description": "mobicat: Android and iOS app logs for you and your coding agent",
+  "owner": { "name": "yamamoto7" },
+  "plugins": [
+    {
+      "name": "mobicat",
+      "source": "./plugins/mobicat",
+      "description": "Read your app's Android and iOS logs and crashes with the mobicat CLI"
+    }
+  ]
+}

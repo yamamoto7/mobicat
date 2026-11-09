@@ -17,5 +17,6 @@ All notable changes are listed here. The format follows
 - App picker with recent and running apps; switching apps mid-run.
 - `--json` and `--plain` output, `--file` input, `--launch`.
 - `--last 5m` prints recent logs and exits; `--for 30s` follows for a while and exits. Both are meant for scripts and coding agents.
+- A guide for coding agents (`docs/agents.md`), examples in `mobicat --help`, and a Claude Code plugin with a mobicat skill.
 - The last 5 minutes of logs on iOS too (`log show`), not only on Android.
 - Config files (`~/.config/mobicat/config.toml`, `.mobicat.toml`) with profiles.
