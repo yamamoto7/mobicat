@@ -1,15 +1,15 @@
 # mobicat
 
 [![CI](https://github.com/yamamoto7/mobicat/actions/workflows/ci.yml/badge.svg)](https://github.com/yamamoto7/mobicat/actions/workflows/ci.yml)
-[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](https://github.com/yamamoto7/mobicat/blob/main/LICENSE)
 
 **One log viewer for Android and iOS. Same keys, same filters, in your terminal.**
 
 mobicat shows only your app's logs from Android devices, emulators and iOS simulators, with the system noise left out. Crashes come first, with the whole stack trace. It works the same on both platforms, so you learn it once. Your coding agent can use it too.
 
-[日本語](README.ja.md)
+[日本語](https://github.com/yamamoto7/mobicat/blob/main/README.ja.md)
 
-![mobicat following a sample app on an Android emulator and an iOS simulator, with a crash highlighted](docs/assets/demo.gif)
+![mobicat following a sample app on an Android emulator and an iOS simulator, with a crash highlighted](https://raw.githubusercontent.com/yamamoto7/mobicat/main/docs/assets/demo.gif)
 
 ## Why mobicat
 
@@ -30,7 +30,7 @@ mobicat shows only your app's logs from Android devices, emulators and iOS simul
 - **Your app only.** Android logs are taken by the app's UID, iOS logs by its executable. System noise is hidden by default (`a` shows everything). Restarts don't lose the app; a `── process started (pid N) ──` line marks them.
 - **Crashes stand out.** Java/Kotlin exceptions, native crashes, Swift fatal errors and uncaught exceptions are grouped into one red `✖ CRASH` block with the stack trace. `]c` jumps to the next one. A crash on a device you aren't looking at shows up on its tab.
 - **The same on both platforms.** One set of keys, one filter syntax and one crash view for every connected Android device and booted simulator. `Tab` switches between them; the All tab shows them together.
-- **Ready for coding agents.** `--last 5m` and `--for 30s` print and exit, as plain lines or NDJSON (`--json`). A [Claude Code plugin](docs/agents.md#claude-code-plugin) teaches Claude when to use them. See [Using mobicat from a coding agent](docs/agents.md).
+- **Ready for coding agents.** `--last 5m` and `--for 30s` print and exit, as plain lines or NDJSON (`--json`). A [Claude Code plugin](https://github.com/yamamoto7/mobicat/blob/main/docs/agents.md#claude-code-plugin) teaches Claude when to use them. See [Using mobicat from a coding agent](https://github.com/yamamoto7/mobicat/blob/main/docs/agents.md).
 - **Android Studio filter syntax.** `tag:OkHttp level:warn -tag:Chatty`, plus `subsystem:`, `os:`, `fw:rn`, `age:5m` and more. Results update as you type, with completion and history.
 - **Cross-platform frameworks.** React Native, Flutter, Kotlin Multiplatform and Capacitor logs are recognized (`fw:` in queries).
 
@@ -158,7 +158,7 @@ keep = ["Choreographer"]    # show a tag hidden by default
 - **iOS simulator:** `xcrun simctl spawn <udid> log stream --style ndjson` filtered by the app's executable. A line is the app's own when it comes from code inside the `.app` bundle, from a subsystem that starts with the bundle ID, from React Native, or from the Swift runtime.
 - Multi-line messages (stack traces) are grouped into one entry, and crash patterns for each platform are marked.
 
-More detail: [requirements](docs/requirements.md), [architecture](docs/architecture.md), [technical notes](docs/technical-notes.md), [coding agents](docs/agents.md).
+More detail: [requirements](https://github.com/yamamoto7/mobicat/blob/main/docs/requirements.md), [architecture](https://github.com/yamamoto7/mobicat/blob/main/docs/architecture.md), [technical notes](https://github.com/yamamoto7/mobicat/blob/main/docs/technical-notes.md), [coding agents](https://github.com/yamamoto7/mobicat/blob/main/docs/agents.md).
 
 ## Roadmap
 
@@ -172,7 +172,7 @@ Ideas and bug reports are welcome in [issues](https://github.com/yamamoto7/mobic
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). The demo above is recorded with Shelf, a sample app in [`demo/`](demo/README.md), and the scripts next to it.
+See [CONTRIBUTING.md](https://github.com/yamamoto7/mobicat/blob/main/CONTRIBUTING.md). The demo above is recorded with Shelf, a sample app in [`demo/`](https://github.com/yamamoto7/mobicat/blob/main/demo/README.md), and the scripts next to it.
 
 ## Acknowledgements
 
@@ -180,4 +180,4 @@ mobicat started as "[pidcat](https://github.com/JakeWharton/pidcat), for both pl
 
 ## License
 
-[Apache-2.0](LICENSE)
+[Apache-2.0](https://github.com/yamamoto7/mobicat/blob/main/LICENSE)
