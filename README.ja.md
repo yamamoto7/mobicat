@@ -36,8 +36,6 @@ mobicat は、Android の端末とエミュレータ、iOS シミュレータか
 
 ## インストール
 
-> まだ最初のリリースを出していません。それまでは、ソースからビルドしてください（いちばん下の方法）。
-
 ```sh
 # Homebrew（macOS、Linux）
 brew trust --tap yamamoto7/tap   # Homebrew 6 以降は、先に tap を信頼する必要があります
@@ -169,7 +167,6 @@ keep = ["Choreographer"]    # 既定で隠す tag を表示に戻す
 - iOS の実機への対応
 - 扱えるログを増やす（iOS のクラッシュレポート、Android のバグレポートなど）
 - MCP を使いたいエージェント向けの MCP サーバー
-- 最初のリリースで、ビルド済みのバイナリと Homebrew の formula を出す
 
 アイデアや不具合の報告は [issues](https://github.com/yamamoto7/mobicat/issues) へどうぞ。日本語でもかまいません。
 

@@ -36,8 +36,6 @@ mobicat shows only your app's logs from Android devices, emulators and iOS simul
 
 ## Install
 
-> mobicat has not had its first release yet. Until then, build it from source (last option below).
-
 ```sh
 # Homebrew (macOS, Linux)
 brew trust --tap yamamoto7/tap   # Homebrew 6 and later ask you to trust a tap first
@@ -169,7 +167,6 @@ mobicat should pick up your app's logs wherever it runs.
 - Physical iOS devices
 - More kinds of logs, such as iOS crash reports and Android bug reports
 - An MCP server for agents that prefer one
-- Prebuilt binaries and a Homebrew formula with the first release
 
 Ideas and bug reports are welcome in [issues](https://github.com/yamamoto7/mobicat/issues).
 

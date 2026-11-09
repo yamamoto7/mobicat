@@ -16,9 +16,9 @@ description = "Android and iOS app logs in one terminal UI"
 anyhow = "1.0.104"
 clap = { version = "4.6.7", features = ["derive"] }
 jiff = "0.2.39"
-mobicat-core = { version = "0.0.0", path = "../mobicat-core" }
-mobicat-sources = { version = "0.0.0", path = "../mobicat-sources" }
-mobicat-tui = { version = "0.0.0", path = "../mobicat-tui" }
+mobicat-core = { version = "0.1.0", path = "../mobicat-core" }
+mobicat-sources = { version = "0.1.0", path = "../mobicat-sources" }
+mobicat-tui = { version = "0.1.0", path = "../mobicat-tui" }
 tokio = { version = "1.54.1", features = ["rt-multi-thread", "macros", "sync", "time", "signal", "io-std", "io-util"] }
 toml = { version = "1.2.1", features = ["preserve_order"] }
 

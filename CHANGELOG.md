@@ -6,6 +6,8 @@ All notable changes are listed here. The format follows
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-11-09
+
 ### Added
 
 - Android (`adb logcat`) and iOS simulator (`simctl log stream`) logs in one terminal UI, with the same keys and filters on both.
@@ -20,3 +22,6 @@ All notable changes are listed here. The format follows
 - A guide for coding agents (`docs/agents.md`), examples in `mobicat --help`, and a Claude Code plugin with a mobicat skill.
 - The last 5 minutes of logs on iOS too (`log show`), not only on Android.
 - Config files (`~/.config/mobicat/config.toml`, `.mobicat.toml`) with profiles.
+
+[Unreleased]: https://github.com/yamamoto7/mobicat/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/yamamoto7/mobicat/releases/tag/v0.1.0
