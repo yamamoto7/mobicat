@@ -91,6 +91,9 @@ mobicat com.example.app --last 10m --json -q 'is:crash' | jq -r .message
 # Restart the app and capture its startup for 20 seconds
 mobicat com.example.app --launch --for 20s
 
+# pidcat's flags work too: minimum level, tags to show or hide, a device
+mobicat com.example.app -l W -t OkHttp -i Chatty -s emulator-5554
+
 # Read a saved log (logcat text or `log stream` ndjson)
 mobicat --file saved.log
 

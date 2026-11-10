@@ -38,7 +38,15 @@ pub fn devices() -> Result<()> {
         let adb = Adb::default();
         if adb.available() {
             match adb.devices().await {
-                Ok(ds) if ds.is_empty() => println!("Android: no devices"),
+                Ok(ds) if ds.is_empty() => {
+                    let unready = adb.unready().await.unwrap_or_default();
+                    if unready.is_empty() {
+                        println!("Android: no devices ({ANDROID_NONE})");
+                    }
+                    for (serial, state) in unready {
+                        println!("Android: {}", unready_hint(&serial, &state));
+                    }
+                }
                 Ok(ds) => {
                     for d in ds {
                         println!("A  {:<24} {}", d.serial, d.model.unwrap_or_default());
@@ -47,17 +55,17 @@ pub fn devices() -> Result<()> {
                 Err(e) => println!("Android: {e:#}"),
             }
         } else {
-            println!("Android: adb not found (set ADB or add platform-tools to PATH)");
+            println!("Android: {ADB_MISSING}");
         }
         if iossim::available() {
             match iossim::booted().await {
-                Ok(ds) if ds.is_empty() => println!("iOS: no booted simulators"),
+                Ok(ds) if ds.is_empty() => println!("iOS: no booted simulators ({IOS_NONE})"),
                 Ok(ds) => {
                     for d in ds {
                         println!("i  {:<38} {} ({})", d.udid, d.name, d.runtime);
                     }
                 }
-                Err(e) => println!("iOS: {e:#}"),
+                Err(e) => println!("iOS: {}", ios_error(&e)),
             }
         } else if cfg!(target_os = "macos") {
             println!("iOS: xcrun not found (install the Xcode command line tools)");
@@ -150,16 +158,16 @@ fn settings(cli: &Cli, cfg: Config) -> Result<Settings> {
         [
             cfg.query.as_deref(),
             profile_q.as_deref(),
+            cli.tag_query().as_deref(),
             cli.query.as_deref(),
         ]
         .into_iter()
         .flatten(),
     );
     let parsed = Query::parse(&query).map_err(|e| anyhow::anyhow!("query `{query}`: {e}"))?;
-    let min_level = cfg
+    let min_level = cli
         .level
-        .as_deref()
-        .and_then(Level::parse)
+        .or_else(|| cfg.level.as_deref().and_then(Level::parse))
         .unwrap_or(Level::Verbose);
     let profiles = cfg.resolved_profiles().unwrap_or_else(|e| {
         warnings.push(format!("profiles: {e:#}"));
@@ -319,16 +327,28 @@ async fn plan(cli: &Cli, s: &Settings) -> Result<(Vec<Planned>, Vec<String>)> {
     let mut planned = Vec::new();
     let mut warnings = Vec::new();
     let mut checked = Vec::new();
+    // Hints for a platform with nothing to use; shown only if nothing runs.
+    let mut idle = Vec::new();
 
     if let Some(pkg) = &s.android {
         let adb = Adb::default();
         if !adb.available() {
-            warnings.push("Android: adb not found; skipping Android".into());
+            warnings.push(format!("Android: {ADB_MISSING}"));
         } else {
-            for d in adb.devices().await.unwrap_or_else(|e| {
+            let devices = adb.devices().await.unwrap_or_else(|e| {
                 warnings.push(format!("Android: {e:#}"));
                 vec![]
-            }) {
+            });
+            if devices.is_empty() {
+                let unready = adb.unready().await.unwrap_or_default();
+                if unready.is_empty() {
+                    idle.push(format!("Android: no devices; {ANDROID_NONE}"));
+                }
+                for (serial, state) in unready {
+                    warnings.push(format!("Android: {}", unready_hint(&serial, &state)));
+                }
+            }
+            for d in devices {
                 if !wanted(&d.serial) {
                     continue;
                 }
@@ -346,7 +366,10 @@ async fn plan(cli: &Cli, s: &Settings) -> Result<(Vec<Planned>, Vec<String>)> {
                             dump,
                         },
                     }),
-                    Ok(None) => warnings.push(format!("{pkg} is not installed on {}", d.serial)),
+                    Ok(None) => {
+                        let apps = adb.user_packages(&d.serial).await.unwrap_or_default();
+                        warnings.push(not_installed(pkg, &d.serial, &apps));
+                    }
                     Err(e) => warnings.push(format!("{}: {e:#}", d.serial)),
                 }
             }
@@ -356,10 +379,14 @@ async fn plan(cli: &Cli, s: &Settings) -> Result<(Vec<Planned>, Vec<String>)> {
     if let Some(bundle) = &s.ios
         && iossim::available()
     {
-        for d in iossim::booted().await.unwrap_or_else(|e| {
-            warnings.push(format!("iOS: {e:#}"));
+        let devices = iossim::booted().await.unwrap_or_else(|e| {
+            warnings.push(format!("iOS: {}", ios_error(&e)));
             vec![]
-        }) {
+        });
+        if devices.is_empty() && !warnings.iter().any(|w| w.starts_with("iOS:")) {
+            idle.push(format!("iOS: no booted simulator; {IOS_NONE}"));
+        }
+        for d in devices {
             if !wanted(&d.udid) {
                 continue;
             }
@@ -374,7 +401,10 @@ async fn plan(cli: &Cli, s: &Settings) -> Result<(Vec<Planned>, Vec<String>)> {
                         dump,
                     },
                 }),
-                Ok(None) => warnings.push(format!("{bundle} is not installed on {}", d.name)),
+                Ok(None) => {
+                    let apps = iossim::user_apps(&d.udid).await.unwrap_or_default();
+                    warnings.push(not_installed(bundle, &d.name, &apps));
+                }
                 Err(e) => warnings.push(format!("{}: {e:#}", d.name)),
             }
         }
@@ -383,15 +413,83 @@ async fn plan(cli: &Cli, s: &Settings) -> Result<(Vec<Planned>, Vec<String>)> {
     if planned.is_empty() {
         let mut msg = String::from("no device has the app installed");
         if checked.is_empty() {
-            msg = "no Android device or booted iOS simulator found (see `mobicat devices`)".into();
+            msg = "no Android device or booted iOS simulator found".into();
         }
-        for w in &warnings {
+        for w in warnings.iter().chain(&idle) {
             msg.push_str("\n  ");
             msg.push_str(w);
+        }
+        if !checked.is_empty() {
+            msg.push_str("\nRun `mobicat` without an app ID to pick from the installed apps.");
         }
         bail!(msg);
     }
     Ok((planned, warnings))
+}
+
+const ADB_MISSING: &str =
+    "adb not found; install Android SDK platform-tools and add them to PATH, or set ADB";
+const ANDROID_NONE: &str = "start an emulator, or connect a device with USB debugging on";
+const IOS_NONE: &str = "boot one in Xcode, or run `open -a Simulator`";
+
+/// What to do about a device that adb lists but cannot use.
+fn unready_hint(serial: &str, state: &str) -> String {
+    match state {
+        "unauthorized" => {
+            format!("{serial} is unauthorized; unlock it and allow USB debugging on the device")
+        }
+        "offline" => format!("{serial} is offline; reconnect it, or run `adb kill-server`"),
+        s if s.starts_with("no permissions") => {
+            format!("{serial}: adb has no permission to use it (on Linux, check the udev rules)")
+        }
+        s => format!("{serial} is {s}"),
+    }
+}
+
+/// An iOS tool error, with the fix for the common one: only the Command
+/// Line Tools are selected, which have no `simctl`.
+fn ios_error(e: &anyhow::Error) -> String {
+    let msg = format!("{e:#}");
+    if msg.contains("unable to find utility") {
+        format!("{msg}; select Xcode with `sudo xcode-select -s /Applications/Xcode.app`")
+    } else {
+        msg
+    }
+}
+
+fn not_installed(id: &str, device: &str, apps: &[String]) -> String {
+    let mut msg = format!("{id} is not installed on {device}");
+    let close = suggest(id, apps);
+    if !close.is_empty() {
+        msg.push_str(&format!(" (did you mean {}?)", close.join(", ")));
+    }
+    msg
+}
+
+/// Installed apps that look like what was typed: IDs that contain it
+/// (`shelf`, or `com.example.app` for `com.example.app.debug`), then near
+/// misspellings. At most three.
+fn suggest<'a>(wanted: &str, apps: &'a [String]) -> Vec<&'a str> {
+    let w = wanted.to_ascii_lowercase();
+    if w.is_empty() {
+        return vec![];
+    }
+    let mut scored: Vec<(usize, &str)> = apps
+        .iter()
+        .filter_map(|a| {
+            let l = a.to_ascii_lowercase();
+            if a == wanted {
+                return None;
+            }
+            if l.contains(&w) {
+                return Some((0, a.as_str()));
+            }
+            let d = strsim::levenshtein(&w, &l);
+            (d <= (w.len() / 5).max(2)).then_some((d, a.as_str()))
+        })
+        .collect();
+    scored.sort();
+    scored.into_iter().take(3).map(|(_, a)| a).collect()
 }
 
 fn start(rt: &Runtime, planned: Vec<Planned>, tx: &mpsc::Sender<Entry>, relaunch: bool) {
@@ -830,5 +928,32 @@ mod tests {
         assert!(!script_wants(&f, &restart, 0));
         f.query = Some(Arc::new(Query::parse("is:system").unwrap()));
         assert!(script_wants(&f, &restart, 0));
+    }
+
+    #[test]
+    fn suggests_installed_apps_that_look_like_the_id() {
+        let apps: Vec<String> = [
+            "com.example.shelf",
+            "com.example.shelf.debug",
+            "com.example.notes",
+            "org.other.app",
+        ]
+        .map(String::from)
+        .to_vec();
+        assert_eq!(
+            suggest("shelf", &apps),
+            ["com.example.shelf", "com.example.shelf.debug"]
+        );
+        assert_eq!(suggest("com.example.shelff", &apps), ["com.example.shelf"]);
+        assert_eq!(suggest("com.example.Notes", &apps), ["com.example.notes"]);
+        assert!(suggest("com.unrelated.thing", &apps).is_empty());
+        assert_eq!(
+            not_installed("com.example.notez", "Pixel 8", &apps),
+            "com.example.notez is not installed on Pixel 8 (did you mean com.example.notes?)"
+        );
+        assert_eq!(
+            not_installed("x.y", "Pixel 8", &[]),
+            "x.y is not installed on Pixel 8"
+        );
     }
 }

@@ -33,8 +33,26 @@ pub struct Cli {
     pub ios: Option<String>,
 
     /// Only use these devices (Android serial or simulator UDID). Repeatable.
-    #[arg(long = "device", short = 'd', value_name = "ID")]
+    #[arg(
+        long = "device",
+        short = 'd',
+        value_name = "ID",
+        visible_alias = "serial",
+        visible_short_alias = 's'
+    )]
     pub devices: Vec<String>,
+
+    /// Hide lines below LEVEL (v, d, i, w, e, f, or the full names).
+    #[arg(long, short = 'l', value_name = "LEVEL", visible_alias = "min-level", value_parser = level)]
+    pub level: Option<mobicat_core::Level>,
+
+    /// Only show these tags (iOS: categories). Repeatable; any of them matches.
+    #[arg(long = "tag", short = 't', value_name = "TAG")]
+    pub tags: Vec<String>,
+
+    /// Hide these tags. Repeatable.
+    #[arg(long = "ignore-tag", short = 'i', value_name = "TAG")]
+    pub ignore_tags: Vec<String>,
 
     /// Filter query, e.g. 'tag:OkHttp level:warn -tag:Chatty' (see `/` in the TUI).
     #[arg(long, short = 'q', value_name = "QUERY")]
@@ -130,6 +148,12 @@ Scripts and coding agents:
   mobicat com.example.app --for 30s                  what happens while you try something
   Add --json for NDJSON. On iOS, past logs have Info and above (the system does not keep Debug).";
 
+fn level(v: &str) -> Result<mobicat_core::Level, String> {
+    mobicat_core::Level::parse(v).ok_or_else(|| {
+        format!("expected a level (v, d, i, w, e, f, or verbose ... fatal), not `{v}`")
+    })
+}
+
 fn duration(v: &str) -> Result<Duration, String> {
     mobicat_core::query::parse_duration(v)
         .filter(|d| !d.is_zero())
@@ -137,6 +161,21 @@ fn duration(v: &str) -> Result<Duration, String> {
 }
 
 impl Cli {
+    /// `--tag` and `--ignore-tag` as a query, like pidcat's flags.
+    pub fn tag_query(&self) -> Option<String> {
+        let terms: Vec<String> = self
+            .tags
+            .iter()
+            .map(|t| format!("tag:{}", quote(t)))
+            .chain(
+                self.ignore_tags
+                    .iter()
+                    .map(|t| format!("-tag:{}", quote(t))),
+            )
+            .collect();
+        (!terms.is_empty()).then(|| terms.join(" "))
+    }
+
     /// Output goes to stdout instead of the TUI.
     pub fn scripted(&self) -> bool {
         self.json || self.plain || self.last.is_some() || self.follow_for.is_some()
@@ -160,5 +199,52 @@ impl Cli {
         self.file
             .as_ref()
             .map(|f| (f != "-").then(|| PathBuf::from(f)))
+    }
+}
+
+/// Quote a query value when it would not parse as one plain word.
+fn quote(v: &str) -> String {
+    if !v.is_empty()
+        && !v
+            .chars()
+            .any(|c| c.is_whitespace() || "()|&\"\\".contains(c))
+    {
+        return v.to_string();
+    }
+    format!("\"{}\"", v.replace('\\', "\\\\").replace('"', "\\\""))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn pidcat_flags() {
+        let cli = Cli::parse_from([
+            "mobicat",
+            "com.example.app",
+            "-l",
+            "W",
+            "-t",
+            "OkHttp",
+            "-t",
+            "My Tag",
+            "-i",
+            "Chatty",
+            "-s",
+            "emulator-5554",
+        ]);
+        assert_eq!(cli.level, Some(mobicat_core::Level::Warn));
+        assert_eq!(cli.devices, ["emulator-5554"]);
+        assert_eq!(
+            cli.tag_query().as_deref(),
+            Some(r#"tag:OkHttp tag:"My Tag" -tag:Chatty"#)
+        );
+        let q = mobicat_core::Query::parse(&cli.tag_query().unwrap());
+        assert!(q.is_ok());
+        let cli = Cli::parse_from(["mobicat", "--min-level", "error", "--serial", "X"]);
+        assert_eq!(cli.level, Some(mobicat_core::Level::Error));
+        assert_eq!(cli.tag_query(), None);
+        assert_eq!(quote(r#"a"b"#), r#""a\"b""#);
     }
 }

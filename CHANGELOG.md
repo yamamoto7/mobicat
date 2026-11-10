@@ -9,6 +9,12 @@ All notable changes are listed here. The format follows
 ### Added
 
 - `cargo binstall mobicat` installs the prebuilt binary from GitHub Releases.
+- pidcat's flags: `-l`/`--level` (alias `--min-level`), `-t`/`--tag`, `-i`/`--ignore-tag`, and `-s`/`--serial` for `--device` (#10).
+
+### Changed
+
+- When the app is not installed, the error suggests installed apps with a similar ID (#8).
+- When there is nothing to read from, the error says what to do: install platform-tools, start an emulator or connect a device, allow USB debugging on an unauthorized device, boot a simulator, or select Xcode (#9).
 
 ## [0.1.1] - 2026-11-09
 

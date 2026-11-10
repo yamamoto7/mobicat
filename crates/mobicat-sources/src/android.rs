@@ -57,6 +57,14 @@ impl Adb {
         Ok(parse_devices(&proc::output(c, QUERY_TIMEOUT).await?))
     }
 
+    /// Devices adb sees but cannot use yet, with their state
+    /// (`unauthorized`, `offline`, `no permissions ...`).
+    pub async fn unready(&self) -> Result<Vec<(String, String)>> {
+        let mut c = self.cmd(None);
+        c.args(["devices"]);
+        Ok(parse_unready(&proc::output(c, QUERY_TIMEOUT).await?))
+    }
+
     /// A name to show: the AVD name for emulators, else the model, else the serial.
     pub async fn display_name(&self, d: &AndroidDevice) -> String {
         if d.serial.starts_with("emulator-") {
@@ -137,6 +145,19 @@ pub fn parse_devices(text: &str) -> Vec<AndroidDevice> {
                 serial: serial.to_owned(),
                 model,
             })
+        })
+        .collect()
+}
+
+/// Parse `adb devices`, keeping devices that are not in the `device` state.
+pub fn parse_unready(text: &str) -> Vec<(String, String)> {
+    text.lines()
+        .skip_while(|l| !l.starts_with("List of devices"))
+        .skip(1)
+        .filter_map(|l| {
+            let (serial, rest) = l.trim().split_once(char::is_whitespace)?;
+            let state = rest.trim();
+            (state != "device" && !state.is_empty()).then(|| (serial.to_owned(), state.to_owned()))
         })
         .collect()
 }
@@ -357,6 +378,22 @@ pub async fn stream(cfg: AndroidStream, tx: mpsc::Sender<Entry>) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn parses_unready_devices() {
+        let text = "List of devices attached\nemulator-5554\tdevice\nR58M123ABC\tunauthorized\n0123\tno permissions (missing udev rules?); see [http://developer.android.com/tools/device.html]\nemulator-5556\toffline\n\n";
+        assert_eq!(
+            parse_unready(text),
+            [
+                ("R58M123ABC".into(), "unauthorized".into()),
+                (
+                    "0123".into(),
+                    "no permissions (missing udev rules?); see [http://developer.android.com/tools/device.html]".into()
+                ),
+                ("emulator-5556".into(), "offline".into()),
+            ]
+        );
+    }
 
     #[test]
     fn parses_devices() {

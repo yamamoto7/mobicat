@@ -23,7 +23,7 @@ mobicat [APP_ID ...] [flags]
 
 - `APP_ID`: package name / bundle ID. If both OSes use the same ID, one is enough. If they differ, use `--android <pkg> --ios <bundle>`.
 - If omitted: use `app` from the config file. If that is also missing, show a picker of apps on connected devices.
-- Devices: auto-detect connected Android devices (`adb devices`) and booted simulators (`simctl list devices booted`). If there are several, show a picker. Specify with `--device <serial|udid>` (repeatable).
+- Devices: auto-detect connected Android devices (`adb devices`) and booted simulators (`simctl list devices booted`). If there are several, show a picker. Specify with `--device <serial|udid>` (repeatable; `-s`/`--serial` also work, as in pidcat).
 
 | Flag | Description |
 |---|---|
@@ -31,6 +31,8 @@ mobicat [APP_ID ...] [flags]
 | `--plain` | Do not open the TUI; stream a colored one-line format (no color when piped) |
 | `-q, --query <QUERY>` | Initial filter (grammar in §7) |
 | `-p, --profile <NAME>` | Use a saved filter from the config file |
+| `-l, --level <LEVEL>` | Minimum level (`v` `d` `i` `w` `e` `f` or the full names). Alias `--min-level`, as in pidcat |
+| `-t, --tag <TAG>` / `-i, --ignore-tag <TAG>` | Show only / hide these tags, repeatable. Same as `-q tag:X` / `-q -tag:X`, for pidcat users |
 | `--all` | Turn off filtering to the app's own logs (app-only) |
 | `--launch` | The tool relaunches the app and also captures stdout/stderr (iOS. §4.2) |
 | `--clear` | Do not read past logs at start (default: the last 5 minutes. logcat's count option is applied before `--uid`, so we specify a time instead. iOS uses `log show`, which keeps Info and above, not Debug) |
@@ -295,3 +297,4 @@ Details decided while implementing, and changes from the sections above. This se
   - Filter by / exclude the selected line's tag with `=` / `!`.
 - **Copy**: locally, use `pbcopy` / `wl-copy` / `xclip` / `xsel` / `clip.exe`; over SSH, use OSC 52 (up to about 100KB). For anything larger, save with `Ctrl-s`. The file is `mobicat-YYYYMMDD-HHMMSS.log` in the current directory.
 - **Config file**: profiles are assigned to `1`–`9` in the order they appear in the file. Unknown keys are warned about and ignored; values of the wrong type are errors. On Windows the user config is `%APPDATA%\mobicat\config.toml`. `mobicat config` shows which files were read and the result.
+- **First run (v0.1.2, 2026-11-10)**: when the app is not installed, the error lists the closest installed apps (IDs that contain what was typed, then misspellings within an edit distance of about a fifth of the length) and points at the picker. When nothing can be used, it says what to do: install platform-tools or set `ADB`; start an emulator or connect a device; accept USB debugging on an `unauthorized` device; reconnect an `offline` one; boot a simulator; select Xcode when only the Command Line Tools are selected (`unable to find utility "simctl"`).

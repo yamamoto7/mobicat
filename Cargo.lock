@@ -918,6 +918,7 @@ dependencies = [
  "mobicat-core",
  "mobicat-sources",
  "mobicat-tui",
+ "strsim",
  "tokio",
  "toml",
 ]

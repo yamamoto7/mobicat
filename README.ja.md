@@ -91,6 +91,9 @@ mobicat com.example.app --last 10m --json -q 'is:crash' | jq -r .message
 # アプリを起動し直して、起動から20秒のログを取る
 mobicat com.example.app --launch --for 20s
 
+# pidcat の引数も使える（最低レベル、出す／隠すタグ、端末）
+mobicat com.example.app -l W -t OkHttp -i Chatty -s emulator-5554
+
 # 保存したログを読む（logcat のテキストか log stream の ndjson）
 mobicat --file saved.log
 
