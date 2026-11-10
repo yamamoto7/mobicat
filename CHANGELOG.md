@@ -6,6 +6,10 @@ All notable changes are listed here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- `cargo binstall mobicat` installs the prebuilt binary from GitHub Releases.
+
 ## [0.1.1] - 2026-11-09
 
 ### Fixed

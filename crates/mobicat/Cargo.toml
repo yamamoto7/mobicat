@@ -23,8 +23,17 @@ tokio = { version = "1.54.1", features = ["rt-multi-thread", "macros", "sync", "
 toml = { version = "1.2.1", features = ["preserve_order"] }
 
 [package.metadata.dist]
-# Built and released by dist even though the crate is not on crates.io yet.
 dist = true
+
+# cargo binstall downloads the archives that dist uploads to GitHub Releases.
+[package.metadata.binstall]
+pkg-url = "{ repo }/releases/download/v{ version }/{ name }-{ target }{ archive-suffix }"
+bin-dir = "{ name }-{ target }/{ bin }{ binary-ext }"
+pkg-fmt = "txz"
+
+[package.metadata.binstall.overrides.x86_64-pc-windows-msvc]
+pkg-fmt = "zip"
+bin-dir = "{ bin }{ binary-ext }"
 
 [lints]
 workspace = true

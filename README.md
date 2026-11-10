@@ -49,6 +49,9 @@ curl --proto '=https' --tlsv1.2 -LsSf https://github.com/yamamoto7/mobicat/relea
 # PowerShell installer (Windows)
 powershell -ExecutionPolicy Bypass -c "irm https://github.com/yamamoto7/mobicat/releases/latest/download/mobicat-installer.ps1 | iex"
 
+# Prebuilt binary through cargo-binstall
+cargo binstall mobicat
+
 # Cargo (Rust 1.88 or later)
 cargo install --locked mobicat
 ```
