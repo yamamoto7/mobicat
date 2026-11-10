@@ -432,6 +432,40 @@ const ADB_MISSING: &str =
 const ANDROID_NONE: &str = "start an emulator, or connect a device with USB debugging on";
 const IOS_NONE: &str = "boot one in Xcode, or run `open -a Simulator`";
 
+/// Why there is nothing to pick from, one line per platform, with what to do.
+/// Empty when some device is ready.
+async fn idle_hints() -> Vec<String> {
+    let mut hints = Vec::new();
+    let adb = Adb::default();
+    if !adb.available() {
+        hints.push(format!("Android: {ADB_MISSING}"));
+    } else {
+        match adb.devices().await {
+            Ok(ds) if !ds.is_empty() => return vec![],
+            Ok(_) => {
+                let unready = adb.unready().await.unwrap_or_default();
+                if unready.is_empty() {
+                    hints.push(format!("Android: no devices; {ANDROID_NONE}"));
+                }
+                for (serial, state) in unready {
+                    hints.push(format!("Android: {}", unready_hint(&serial, &state)));
+                }
+            }
+            Err(e) => hints.push(format!("Android: {e:#}")),
+        }
+    }
+    if iossim::available() {
+        match iossim::booted().await {
+            Ok(ds) if !ds.is_empty() => return vec![],
+            Ok(_) => hints.push(format!("iOS: no booted simulator; {IOS_NONE}")),
+            Err(e) => hints.push(format!("iOS: {}", ios_error(&e))),
+        }
+    } else if cfg!(target_os = "macos") {
+        hints.push("iOS: xcrun not found; install Xcode".into());
+    }
+    hints
+}
+
 /// What to do about a device that adb lists but cannot use.
 fn unready_hint(serial: &str, state: &str) -> String {
     match state {
@@ -582,7 +616,14 @@ pub fn logs(cli: &Cli) -> Result<()> {
         if interactive && (needs_app || switching) {
             let items = runtime()?.block_on(installed_apps(cli));
             if items.is_empty() {
-                bail!("no apps found on connected devices (see `mobicat devices`)");
+                let hints = runtime()?.block_on(idle_hints());
+                if hints.is_empty() {
+                    bail!("no apps found on connected devices (see `mobicat devices`)");
+                }
+                bail!(
+                    "no Android device or booted iOS simulator found\n  {}",
+                    hints.join("\n  ")
+                );
             }
             match mobicat_tui::pick_app(items, switching)? {
                 Some(id) => {

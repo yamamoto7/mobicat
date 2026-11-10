@@ -15,6 +15,7 @@ All notable changes are listed here. The format follows
 
 - When the app is not installed, the error suggests installed apps with a similar ID (#8).
 - When there is nothing to read from, the error says what to do: install platform-tools, start an emulator or connect a device, allow USB debugging on an unauthorized device, boot a simulator, or select Xcode (#9).
+- `mobicat` with no app ID gives the same help when no device is ready, instead of "no apps found".
 
 ## [0.1.1] - 2026-11-09
 
