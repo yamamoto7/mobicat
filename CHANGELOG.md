@@ -6,6 +6,8 @@ All notable changes are listed here. The format follows
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-16
+
 ### Added
 
 - Crash reports from iOS simulators (#5): when the app crashes, the `.ips` report macOS writes shows up as a crash entry with the exception and the crashed thread's frames, with file and line. `--last` includes reports from that window. In `--json`, `source` is `report`.
@@ -61,7 +63,8 @@ All notable changes are listed here. The format follows
 - The last 5 minutes of logs on iOS too (`log show`), not only on Android.
 - Config files (`~/.config/mobicat/config.toml`, `.mobicat.toml`) with profiles.
 
-[Unreleased]: https://github.com/yamamoto7/mobicat/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/yamamoto7/mobicat/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/yamamoto7/mobicat/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/yamamoto7/mobicat/compare/v0.1.2...v0.2.0
 [0.1.2]: https://github.com/yamamoto7/mobicat/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/yamamoto7/mobicat/compare/v0.1.0...v0.1.1
