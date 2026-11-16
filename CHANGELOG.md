@@ -6,6 +6,8 @@ All notable changes are listed here. The format follows
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-16
+
 ### Added
 
 - Physical iPhones and iPads over USB (#3): the same app-only view, crash blocks and filters as on simulators, with no sudo. `mobicat devices` lists them, the app picker includes their apps, and `--launch` restarts the app with `xcrun devicectl`. Past logs (`--last`) and `print()` output are simulator-only for now.
@@ -47,7 +49,8 @@ All notable changes are listed here. The format follows
 - The last 5 minutes of logs on iOS too (`log show`), not only on Android.
 - Config files (`~/.config/mobicat/config.toml`, `.mobicat.toml`) with profiles.
 
-[Unreleased]: https://github.com/yamamoto7/mobicat/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/yamamoto7/mobicat/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/yamamoto7/mobicat/compare/v0.1.2...v0.2.0
 [0.1.2]: https://github.com/yamamoto7/mobicat/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/yamamoto7/mobicat/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/yamamoto7/mobicat/releases/tag/v0.1.0
