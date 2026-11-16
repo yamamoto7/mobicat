@@ -51,6 +51,11 @@ pub struct OsLogContext {
     pub app: Option<AppInfo>,
     app_id: Option<Arc<str>>,
     pub interner: Interner,
+    /// Compare the install directory too. Devices report the live install,
+    /// and a debug and a release build of an app often share the executable
+    /// and bundle names; `log show` on simulators can report an earlier
+    /// install, so there it is not compared.
+    pub same_install: bool,
 }
 
 impl OsLogContext {
@@ -61,6 +66,7 @@ impl OsLogContext {
             app,
             app_id,
             interner: Interner::default(),
+            same_install: false,
         }
     }
 }
@@ -79,22 +85,59 @@ pub fn parse_line(line: &str, ctx: &mut OsLogContext) -> Option<Entry> {
     if r.event_type != "logEvent" {
         return None;
     }
+    let time_ns = parse_timestamp(&r.timestamp)?;
+    to_entry(
+        &OsRecord {
+            message_type: &r.message_type,
+            subsystem: &r.subsystem,
+            category: &r.category,
+            process_id: r.process_id,
+            thread_id: r.thread_id,
+            process_image_path: &r.process_image_path,
+            sender_image_path: &r.sender_image_path,
+            process_image_uuid: &r.process_image_uuid,
+            sender_image_uuid: &r.sender_image_uuid,
+            message: &r.event_message,
+        },
+        time_ns,
+        ctx,
+    )
+}
+
+/// One OSLog entry, from `log stream` on a simulator or from a device's
+/// os_trace relay.
+pub struct OsRecord<'a> {
+    /// `Default`, `Info`, `Debug`, `Error` or `Fault`.
+    pub message_type: &'a str,
+    pub subsystem: &'a str,
+    pub category: &'a str,
+    pub process_id: u32,
+    pub thread_id: u64,
+    pub process_image_path: &'a str,
+    pub sender_image_path: &'a str,
+    pub process_image_uuid: &'a str,
+    pub sender_image_uuid: &'a str,
+    pub message: &'a str,
+}
+
+/// Build an entry. `None` for records from a different app with the same
+/// executable name (or, on a device, from any other process).
+pub fn to_entry(r: &OsRecord, time_ns: i64, ctx: &mut OsLogContext) -> Option<Entry> {
     if let Some(app) = &ctx.app
-        && !is_inside(&r.process_image_path, &app.app_path)
+        && !in_app(r.process_image_path, &app.app_path, ctx.same_install)
     {
         return None;
     }
-    let time_ns = parse_timestamp(&r.timestamp)?;
-    let library = basename(&r.sender_image_path);
+    let library = basename(r.sender_image_path);
     let tag = if !r.category.is_empty() {
-        &r.category
+        r.category
     } else if !r.subsystem.is_empty() {
-        r.subsystem.rsplit('.').next().unwrap_or(&r.subsystem)
+        r.subsystem.rsplit('.').next().unwrap_or(r.subsystem)
     } else {
         library
     };
     let app_only = match &ctx.app {
-        Some(app) => is_app_only(&r, app),
+        Some(app) => is_app_only(r, app, ctx.same_install),
         None => true,
     };
     Some(Entry {
@@ -104,16 +147,16 @@ pub fn parse_line(line: &str, ctx: &mut OsLogContext) -> Option<Entry> {
         time_ns,
         pid: r.process_id,
         tid: r.thread_id,
-        level: Level::from_os_log(&r.message_type),
+        level: Level::from_os_log(r.message_type),
         tag: ctx.interner.get(tag),
-        subsystem: ctx.interner.opt(&r.subsystem),
-        category: ctx.interner.opt(&r.category),
+        subsystem: ctx.interner.opt(r.subsystem),
+        category: ctx.interner.opt(r.category),
         library: ctx.interner.opt(library),
         source: Source::Log,
         app_only,
         crash: false,
         framework: mobicat_core::Framework::Native,
-        message: r.event_message.into_owned().into_boxed_str(),
+        message: r.message.into(),
     })
 }
 
@@ -123,7 +166,7 @@ pub fn parse_line(line: &str, ctx: &mut OsLogContext) -> Option<Entry> {
 /// subsystem rules for apps that use OSLog/Logger and for React Native.
 /// Apple subsystems are excluded even when emitted from inside the bundle:
 /// Xcode's preview stub (`com.apple.Previews.StubExecutor`) logs from there.
-fn is_app_only(r: &Record, app: &AppInfo) -> bool {
+fn is_app_only(r: &OsRecord, app: &AppInfo, same_install: bool) -> bool {
     if r.sender_image_path.ends_with("/libswiftCore.dylib") {
         return true; // fatalError, precondition failures
     }
@@ -136,12 +179,14 @@ fn is_app_only(r: &Record, app: &AppInfo) -> bool {
     if r.subsystem.starts_with("com.apple.") {
         return false;
     }
-    is_inside(&r.sender_image_path, &app.app_path)
+    in_app(r.sender_image_path, &app.app_path, same_install)
         || (!r.sender_image_uuid.is_empty() && r.sender_image_uuid == r.process_image_uuid)
 }
 
-/// Where simulators install apps, one directory (a UUID) per install.
-const INSTALLS: &str = "/Containers/Bundle/Application/";
+/// Where apps are installed, one directory (a UUID) per install:
+/// `.../data/Containers/Bundle/Application/` on simulators,
+/// `/private/var/containers/Bundle/Application/` on devices.
+const INSTALLS: &str = "ontainers/Bundle/Application/";
 
 /// Whether `path` is inside the app bundle `dir`. `log show` can report the
 /// directory of an earlier install of the same binary, so the install
@@ -156,6 +201,14 @@ fn is_inside(path: &str, dir: &str) -> bool {
         _ => (path, dir),
     };
     path.len() > dir.len() && path.starts_with(dir) && path.as_bytes()[dir.len()] == b'/'
+}
+
+fn in_app(path: &str, dir: &str, same_install: bool) -> bool {
+    if same_install {
+        path.len() > dir.len() && path.starts_with(dir) && path.as_bytes()[dir.len()] == b'/'
+    } else {
+        is_inside(path, dir)
+    }
 }
 
 fn basename(path: &str) -> &str {

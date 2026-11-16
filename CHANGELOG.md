@@ -6,6 +6,10 @@ All notable changes are listed here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- Physical iPhones and iPads over USB (#3): the same app-only view, crash blocks and filters as on simulators, with no sudo. `mobicat devices` lists them, the app picker includes their apps, and `--launch` restarts the app with `xcrun devicectl`. Past logs (`--last`) and `print()` output are simulator-only for now.
+
 ## [0.1.2] - 2026-11-10
 
 ### Added

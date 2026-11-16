@@ -7,7 +7,7 @@
 
 **One log viewer for Android and iOS. Same keys, same filters, in your terminal.**
 
-mobicat shows only your app's logs from Android devices, emulators and iOS simulators, with the system noise left out. Crashes come first, with the whole stack trace. It works the same on both platforms, so you learn it once. Your coding agent can use it too.
+mobicat shows only your app's logs from Android devices and emulators, iPhones and iOS simulators, with the system noise left out. Crashes come first, with the whole stack trace. It works the same on both platforms, so you learn it once. Your coding agent can use it too.
 
 [日本語](https://github.com/yamamoto7/mobicat/blob/main/README.ja.md)
 
@@ -22,7 +22,7 @@ mobicat shows only your app's logs from Android devices, emulators and iOS simul
 |  | mobicat | Android Studio Logcat | Xcode console | pidcat |
 |---|:-:|:-:|:-:|:-:|
 | Android | ✓ | ✓ | | ✓ |
-| iOS simulator | ✓ | | ✓ | |
+| iOS simulator and iPhone | ✓ | | ✓ | |
 | Same tool and filters on Android and iOS | ✓ | | | |
 | Runs in a terminal, works over SSH | ✓ | | | ✓ |
 | Made for coding agents (exits with the logs, JSON) | ✓ | | | |
@@ -31,7 +31,7 @@ mobicat shows only your app's logs from Android devices, emulators and iOS simul
 
 - **Your app only.** Android logs are taken by the app's UID, iOS logs by its executable. System noise is hidden by default (`a` shows everything). Restarts don't lose the app; a `── process started (pid N) ──` line marks them.
 - **Crashes stand out.** Java/Kotlin exceptions, native crashes, Swift fatal errors and uncaught exceptions are grouped into one red `✖ CRASH` block with the stack trace. `]c` jumps to the next one. A crash on a device you aren't looking at shows up on its tab.
-- **The same on both platforms.** One set of keys, one filter syntax and one crash view for every connected Android device and booted simulator. `Tab` switches between them; the All tab shows them together.
+- **The same on both platforms.** One set of keys, one filter syntax and one crash view for every connected Android device, iPhone and booted simulator. `Tab` switches between them; the All tab shows them together.
 - **Ready for coding agents.** `--last 5m` and `--for 30s` print and exit, as plain lines or NDJSON (`--json`). A [Claude Code plugin](https://github.com/yamamoto7/mobicat/blob/main/docs/agents.md#claude-code-plugin) teaches Claude when to use them. See [Using mobicat from a coding agent](https://github.com/yamamoto7/mobicat/blob/main/docs/agents.md).
 - **Android Studio filter syntax.** `tag:OkHttp level:warn -tag:Chatty`, plus `subsystem:`, `os:`, `fw:rn`, `age:5m` and more. Results update as you type, with completion and history.
 - **Cross-platform frameworks.** React Native, Flutter, Kotlin Multiplatform and Capacitor logs are recognized (`fw:` in queries).
@@ -59,7 +59,8 @@ cargo install --locked mobicat
 You also need:
 
 - Android: `adb` (Android SDK platform-tools) on your `PATH`.
-- iOS: macOS with Xcode (`xcrun simctl`). Simulators only for now; physical iOS devices are not supported yet.
+- iOS simulators: macOS with Xcode (`xcrun simctl`).
+- iPhones and iPads: connected and trusted (usbmuxd, which comes with macOS). No sudo needed. Past logs (`--last`) and `print()` output are simulator-only for now.
 
 For Claude Code, the plugin adds a skill that runs mobicat for you (install the command first):
 
@@ -97,7 +98,7 @@ mobicat com.example.app -l W -t OkHttp -i Chatty -s emulator-5554
 # Read a saved log (logcat text or `log stream` ndjson)
 mobicat --file saved.log
 
-# List connected devices and booted simulators
+# List connected devices, iPhones and booted simulators
 mobicat devices
 ```
 
@@ -164,6 +165,7 @@ keep = ["Choreographer"]    # show a tag hidden by default
 
 - **Android:** `adb logcat --uid <app uid>` for each device, so lines from the app's processes are kept across restarts (the UID stays the same; the PID does not). Framework tags that every app emits are hidden; your own tags and bundled SDKs are not.
 - **iOS simulator:** `xcrun simctl spawn <udid> log stream --style ndjson` filtered by the app's executable. A line is the app's own when it comes from code inside the `.app` bundle, from a subsystem that starts with the bundle ID, from React Native, or from the Swift runtime.
+- **iPhone:** the device's os_trace relay over usbmuxd (through [idevice](https://github.com/jkcoxson/idevice)), with the same rules. Only lines from the app's current install are kept, so a debug and a release build side by side stay apart.
 - Multi-line messages (stack traces) are grouped into one entry, and crash patterns for each platform are marked.
 
 More detail: [requirements](https://github.com/yamamoto7/mobicat/blob/main/docs/requirements.md), [architecture](https://github.com/yamamoto7/mobicat/blob/main/docs/architecture.md), [technical notes](https://github.com/yamamoto7/mobicat/blob/main/docs/technical-notes.md), [coding agents](https://github.com/yamamoto7/mobicat/blob/main/docs/agents.md).
@@ -172,7 +174,7 @@ More detail: [requirements](https://github.com/yamamoto7/mobicat/blob/main/docs/
 
 mobicat should pick up your app's logs wherever it runs.
 
-- Physical iOS devices
+- Past logs and crash reports from iPhones
 - More kinds of logs, such as iOS crash reports and Android bug reports
 - An MCP server for agents that prefer one
 

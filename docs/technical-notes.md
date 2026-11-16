@@ -42,14 +42,16 @@ Environment: macOS 26.6.2, Xcode 26.5, iOS 26.5 simulator (iPhone 17 Pro), Andro
   - Available fields: timestamp, messageType (Default, Info, Debug, Error, Fault), subsystem, category, processImagePath, eventMessage, and more (unverified).
 - Look up the process name from a bundle ID: `xcrun simctl listapps <udid>` (outputs plist, unverified). Or `xcrun simctl get_app_container`.
 
-## iOS devices (Phase 2, capture method needs research)
+## iOS devices (verified 2026-11-16, iOS 26.6.1 over USB, macOS)
 
-- Candidates (all unverified):
-  - `idevicesyslog` (libimobiledevice): via syslog relay. Structured OSLog data may be lost.
-  - `pymobiledevice3 syslog live` and os_trace tools: said to stream structured logs. Adds a Python dependency.
-  - `xcrun devicectl device process launch --console` (Xcode 15+): only stdout and stderr of a process you launch yourself.
-  - `log collect --device`: collects an archive; it does not stream in real time.
-- Reports say the connection method changed in iOS 17+ (RemoteXPC and tunnels). Device support could take a lot of work, so it was left out of the MVP.
+- **Capture:** usbmuxd → lockdown → `com.apple.os_trace_relay` (`StartActivity`), through the idevice crate. No sudo and no iOS 17+ RemoteXPC tunnel: the pairing record usbmuxd keeps is enough. Entries are structured: pid, process path, sender image path and UUID, subsystem, category, level, message.
+- **Volume:** the relay sends every process, about 5,000–8,000 entries a second on an idle phone. mobicat keeps the app's by process path; CPU stays low.
+- **Which lines are the app's:** compare the process path with the bundle path from `installation_proxy` (`Path`), including the install directory. Debug (`.stg`) and release builds of one app often share the executable and bundle names, so the name alone is not enough. On simulators the install directory is not compared, because `log show` can report an earlier install.
+- **Levels:** Notice, Info, Debug, Error, Fault, mapped like `log stream`'s message types.
+- **Timestamps:** idevice 0.1.68 passes microseconds where chrono expects nanoseconds; mobicat corrects it.
+- **Build:** `default-features = false` with `ring` avoids aws-lc's C build.
+- **`--launch`:** `xcrun devicectl device process launch --terminate-existing --device <udid> <bundle>` (Xcode 15+, accepts the UDID).
+- Not done yet: past logs (the relay can create an archive, like `log collect`), stdout (`print()`), crash reports (`crashreportcopymobile`), Linux (needs the usbmuxd daemon and a pairing record) and Windows (Apple Mobile Device Service) checks, Wi-Fi devices.
 
 ## Design outline (draft)
 

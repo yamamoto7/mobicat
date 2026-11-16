@@ -10,6 +10,7 @@ use mobicat_core::output::{write_json, write_plain};
 use mobicat_core::store::now_ns;
 use mobicat_core::{Clock, Entry, Filter, Level, Noise, Platform, Query, Source, Store};
 use mobicat_sources::android::{self, Adb, AndroidStream};
+use mobicat_sources::iosdevice::{self, DeviceStream};
 use mobicat_sources::iossim::{self, SimStream};
 use mobicat_sources::{file, launch};
 use mobicat_tui::{AppItem, TuiOptions};
@@ -69,6 +70,17 @@ pub fn devices() -> Result<()> {
             }
         } else if cfg!(target_os = "macos") {
             println!("iOS: xcrun not found (install the Xcode command line tools)");
+        }
+        if iosdevice::available().await {
+            match iosdevice::devices().await {
+                Ok(ds) => {
+                    for d in ds {
+                        let via = if d.network { ", Wi-Fi" } else { "" };
+                        println!("i  {:<38} {} (iOS {}{via})", d.udid, d.name, d.version);
+                    }
+                }
+                Err(e) => println!("iOS devices: {e:#}"),
+            }
         }
     });
     Ok(())
@@ -205,6 +217,7 @@ fn settings(cli: &Cli, cfg: Config) -> Result<Settings> {
 enum Planned {
     Android { cfg: AndroidStream, label: String },
     Ios { cfg: SimStream, label: String },
+    IosDevice { cfg: DeviceStream, label: String },
     File(Option<std::path::PathBuf>),
 }
 
@@ -216,6 +229,9 @@ impl Planned {
                 Some((cfg.serial.clone(), Platform::Android, label.clone()))
             }
             Planned::Ios { cfg, label } => Some((cfg.udid.clone(), Platform::Ios, label.clone())),
+            Planned::IosDevice { cfg, label } => {
+                Some((cfg.udid.clone(), Platform::Ios, label.clone()))
+            }
             Planned::File(_) => None,
         }
     }
@@ -256,6 +272,13 @@ async fn installed_apps(cli: &Cli) -> Vec<AppItem> {
                     on.entry(b).or_default().1 = true;
                 }
                 running.extend(iossim::running_apps(&d.udid).await.unwrap_or_default());
+            }
+        }
+    }
+    for udid in iosdevice::connected().await.unwrap_or_default() {
+        if wanted(&udid) {
+            for b in iosdevice::user_apps(&udid).await.unwrap_or_default() {
+                on.entry(b).or_default().1 = true;
             }
         }
     }
@@ -329,6 +352,8 @@ async fn plan(cli: &Cli, s: &Settings) -> Result<(Vec<Planned>, Vec<String>)> {
     let mut checked = Vec::new();
     // Hints for a platform with nothing to use; shown only if nothing runs.
     let mut idle = Vec::new();
+    // iPhones skipped because they cannot give past logs (`--last` alone).
+    let mut no_past = 0;
 
     if let Some(pkg) = &s.android {
         let adb = Adb::default();
@@ -410,8 +435,40 @@ async fn plan(cli: &Cli, s: &Settings) -> Result<(Vec<Planned>, Vec<String>)> {
         }
     }
 
+    if let Some(bundle) = &s.ios {
+        let phones = iosdevice::devices().await.unwrap_or_default();
+        if !phones.is_empty() {
+            idle.retain(|h: &String| !h.starts_with("iOS:"));
+        }
+        for d in phones.into_iter().filter(|d| wanted(&d.udid)) {
+            checked.push(d.name.clone());
+            if dump {
+                no_past += 1;
+                warnings.push(format!(
+                    "{}: past logs are not available from iPhones yet; use --for to follow",
+                    d.name
+                ));
+                continue;
+            }
+            match iosdevice::app_info(&d.udid, bundle).await {
+                Ok(Some(app)) => planned.push(Planned::IosDevice {
+                    label: d.name.clone(),
+                    cfg: DeviceStream { udid: d.udid, app },
+                }),
+                Ok(None) => {
+                    let apps = iosdevice::user_apps(&d.udid).await.unwrap_or_default();
+                    warnings.push(not_installed(bundle, &d.name, &apps));
+                }
+                Err(e) => warnings.push(format!("{}: {e:#}", d.name)),
+            }
+        }
+    }
+
     if planned.is_empty() {
         let mut msg = String::from("no device has the app installed");
+        if no_past > 0 && no_past == checked.len() {
+            msg = "nothing to show".into();
+        }
         if checked.is_empty() {
             msg = "no Android device or booted iOS simulator found".into();
         }
@@ -419,7 +476,7 @@ async fn plan(cli: &Cli, s: &Settings) -> Result<(Vec<Planned>, Vec<String>)> {
             msg.push_str("\n  ");
             msg.push_str(w);
         }
-        if !checked.is_empty() {
+        if !checked.is_empty() && no_past < checked.len() {
             msg.push_str("\nRun `mobicat` without an app ID to pick from the installed apps.");
         }
         bail!(msg);
@@ -462,6 +519,9 @@ async fn idle_hints() -> Vec<String> {
         }
     } else if cfg!(target_os = "macos") {
         hints.push("iOS: xcrun not found; install Xcode".into());
+    }
+    if !iosdevice::connected().await.unwrap_or_default().is_empty() {
+        return vec![];
     }
     hints
 }
@@ -566,6 +626,28 @@ fn start(rt: &Runtime, planned: Vec<Planned>, tx: &mpsc::Sender<Entry>, relaunch
                 }
                 rt.spawn(iossim::stream(cfg, tx));
             }
+            Planned::IosDevice { cfg, .. } => {
+                if relaunch {
+                    let (udid, bundle) = (cfg.udid.clone(), cfg.app.bundle_id.clone());
+                    let tx = tx.clone();
+                    rt.spawn(async move {
+                        tokio::time::sleep(Duration::from_millis(700)).await;
+                        if let Err(e) = launch::restart_ios_device(&udid, &bundle).await {
+                            let _ = tx
+                                .send(Entry::system(
+                                    Platform::Ios,
+                                    Arc::from(udid.as_str()),
+                                    None,
+                                    now_ns(),
+                                    Level::Error,
+                                    format!("--launch: {e:#}"),
+                                ))
+                                .await;
+                        }
+                    });
+                }
+                rt.spawn(iosdevice::stream(cfg, tx));
+            }
             Planned::File(path) => {
                 rt.spawn(async move {
                     let name = path
@@ -657,7 +739,9 @@ fn session(cli: &Cli, mut s: Settings, interactive: bool) -> Result<bool> {
     if interactive && cli.file.is_none() && !app_label.is_empty() {
         remember_app(&app_label);
     }
-    let has_ios = planned.iter().any(|p| matches!(p, Planned::Ios { .. }));
+    let has_ios = planned
+        .iter()
+        .any(|p| matches!(p, Planned::Ios { .. } | Planned::IosDevice { .. }));
     let devices: Vec<_> = planned.iter().filter_map(Planned::device).collect();
     let live = cli.file.is_none();
     let (tx, rx) = mpsc::channel(CHANNEL);
@@ -838,6 +922,9 @@ async fn watch_devices(store: mobicat_tui::SharedStore, w: Watch) {
     let wanted = |id: &str| w.only.is_empty() || w.only.iter().any(|d| d == id);
     let use_adb = w.android.is_some() && adb.available();
     let use_sim = w.ios.is_some() && iossim::available();
+    let use_phone = w.ios.is_some();
+    // Physical iPhones among the iOS keys.
+    let mut phones: std::collections::HashSet<String> = Default::default();
     // Devices already looked at; a device without the app is not asked again.
     let mut checked: std::collections::HashSet<String> = Default::default();
     loop {
@@ -870,6 +957,12 @@ async fn watch_devices(store: mobicat_tui::SharedStore, w: Watch) {
                     .map(|d| (d.udid, Platform::Ios, d.name)),
             );
         }
+        if use_phone && let Ok(ids) = iosdevice::connected().await {
+            for id in ids.into_iter().filter(|d| wanted(d)) {
+                phones.insert(id.clone());
+                present.push((id, Platform::Ios, String::new()));
+            }
+        }
         let (known, new): (Vec<_>, Vec<_>) = {
             let st = store.lock().expect("store lock");
             present
@@ -886,7 +979,7 @@ async fn watch_devices(store: mobicat_tui::SharedStore, w: Watch) {
             for (k, p) in keys {
                 let polled = match p {
                     Platform::Android => use_adb,
-                    Platform::Ios => use_sim,
+                    Platform::Ios => use_sim || use_phone,
                 };
                 if polled {
                     st.set_connected(&k, known.iter().any(|(x, ..)| *x == k));
@@ -912,6 +1005,17 @@ async fn watch_devices(store: mobicat_tui::SharedStore, w: Watch) {
                                 noise: w.noise.clone(),
                                 dump: false,
                             },
+                            w.tx.clone(),
+                        ));
+                    }
+                }
+                Platform::Ios if phones.contains(&key) => {
+                    let Some(bundle) = &w.ios else { continue };
+                    if let Ok(Some(app)) = iosdevice::app_info(&key, bundle).await {
+                        let name = iosdevice::name(&key).await;
+                        store.lock().expect("store lock").add_device(&key, p, &name);
+                        tokio::spawn(iosdevice::stream(
+                            DeviceStream { udid: key, app },
                             w.tx.clone(),
                         ));
                     }

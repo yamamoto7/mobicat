@@ -14,6 +14,27 @@ use crate::proc;
 
 const TIMEOUT: Duration = Duration::from_secs(20);
 
+/// Restart an app on a physical iPhone with `xcrun devicectl` (Xcode 15+,
+/// macOS only).
+pub async fn restart_ios_device(udid: &str, bundle_id: &str) -> anyhow::Result<()> {
+    if !cfg!(target_os = "macos") {
+        anyhow::bail!("restarting apps on iPhones needs Xcode (macOS)");
+    }
+    let mut c = Command::new("xcrun");
+    c.args([
+        "devicectl",
+        "device",
+        "process",
+        "launch",
+        "--terminate-existing",
+        "--device",
+        udid,
+        bundle_id,
+    ]);
+    proc::output(c, TIMEOUT).await?;
+    Ok(())
+}
+
 /// Force-stop and start the app's launcher activity.
 pub async fn restart_android(adb: &Adb, serial: &str, package: &str) -> anyhow::Result<()> {
     let mut c = Command::new(&adb.program);

@@ -3,7 +3,7 @@
 Coding agents (Claude Code, Codex, Cursor, Gemini CLI and others) run shell
 commands and read what they print. mobicat gives them the same logs you see in
 the TUI: only your app's, with crashes grouped with their stack traces, from
-Android devices and emulators and iOS simulators alike.
+Android devices and emulators, iPhones and iOS simulators alike.
 
 Use `--last` or `--for` so the command exits:
 
@@ -64,7 +64,7 @@ in the project:
 When they differ, pass both: `mobicat --android com.example.app --ios com.example.App --last 5m`.
 A `.mobicat.toml` with `app = "..."` in the repository saves passing it each time.
 
-`mobicat devices` lists the connected devices and booted simulators.
+`mobicat devices` lists the connected devices, iPhones and booted simulators.
 
 ## Limits
 
@@ -72,7 +72,8 @@ A `.mobicat.toml` with `app = "..."` in the repository saves passing it each tim
   Debug lines, so `--for` is the way to capture them.
 - iOS `print()` output goes to stdout, not to the system log. It is captured
   only with `--launch`, which restarts the app.
-- Physical iOS devices are not supported yet.
+- On iPhones, only new lines can be read for now: use `--for`, not `--last`
+  alone. `--launch` restarts the app with `xcrun devicectl` (macOS).
 
 ## Claude Code plugin
 
