@@ -739,9 +739,8 @@ fn session(cli: &Cli, mut s: Settings, interactive: bool) -> Result<bool> {
     if interactive && cli.file.is_none() && !app_label.is_empty() {
         remember_app(&app_label);
     }
-    let has_ios = planned
-        .iter()
-        .any(|p| matches!(p, Planned::Ios { .. } | Planned::IosDevice { .. }));
+    // The --launch hint is about print(), which only simulators capture.
+    let has_ios = planned.iter().any(|p| matches!(p, Planned::Ios { .. }));
     let devices: Vec<_> = planned.iter().filter_map(Planned::device).collect();
     let live = cli.file.is_none();
     let (tx, rx) = mpsc::channel(CHANNEL);

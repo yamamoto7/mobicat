@@ -239,12 +239,13 @@ pub async fn stream(cfg: DeviceStream, tx: mpsc::Sender<Entry>) {
     ctx.same_install = true;
     let annot = Annotator::default();
     let mut pids = HashSet::new();
-    let mut failed_before = false;
+    // Say so once per outage, not on every retry.
+    let mut quiet = false;
     loop {
-        match follow(&cfg, &mut ctx, &annot, &mut pids, &tx).await {
+        match follow(&cfg, &mut ctx, &annot, &mut pids, &tx, &mut quiet).await {
             Ok(()) => return, // receiver gone
             Err(e) => {
-                if !failed_before
+                if !quiet
                     && tx
                         .send(note(Level::Warn, format!("{e:#}; retrying")))
                         .await
@@ -252,7 +253,7 @@ pub async fn stream(cfg: DeviceStream, tx: mpsc::Sender<Entry>) {
                 {
                     return;
                 }
-                failed_before = true;
+                quiet = true;
             }
         }
         tokio::select! {
@@ -270,11 +271,25 @@ async fn follow(
     annot: &Annotator,
     pids: &mut HashSet<u32>,
     tx: &mpsc::Sender<Entry>,
+    quiet: &mut bool,
 ) -> Result<()> {
     let d = find(&cfg.udid).await?;
     let p = provider(&d);
     let client = timed("os_trace_relay", OsTraceRelayClient::connect(&p)).await?;
     let mut rx = timed("os_trace_relay", client.start_trace(None)).await?;
+    if std::mem::take(quiet) {
+        let n = Entry::system(
+            Platform::Ios,
+            ctx.device.clone(),
+            Some(Arc::from(cfg.app.bundle_id.as_str())),
+            now_ns(),
+            Level::Info,
+            "reconnected",
+        );
+        if tx.send(n).await.is_err() {
+            return Ok(());
+        }
+    }
     loop {
         let l = tokio::select! {
             r = rx.next() => r.map_err(|e| anyhow!("device log stream: {e}"))?,
