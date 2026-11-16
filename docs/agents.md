@@ -37,7 +37,7 @@ The columns are time, platform (`A` Android, `i` iOS), level (`V` `D` `I` `W`
 `E` `F`), tag (on iOS, the `os_log` category) and the message. A crash is one
 entry with the whole stack trace.
 
-`--json` prints one object per line with every field, including the device,
+`--json` prints one object per line with every field ([the keys](stability.md#--json-output)), including the device,
 pid, subsystem, framework and whether the entry is a crash. It is easy to
 filter with `jq`:
 

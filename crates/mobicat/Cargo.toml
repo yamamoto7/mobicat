@@ -15,6 +15,8 @@ description = "One log viewer for Android and iOS: your app's logs only, crashes
 [dependencies]
 anyhow = "1.0.104"
 clap = { version = "4.6.7", features = ["derive"] }
+clap_complete = "4.6.11"
+clap_mangen = "0.3.3"
 jiff = "0.2.39"
 mobicat-core = { version = "0.2.0", path = "../mobicat-core" }
 mobicat-sources = { version = "0.2.0", path = "../mobicat-sources" }

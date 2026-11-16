@@ -10,7 +10,7 @@ use mobicat_sources::synthetic::{self, SynthConfig};
 use mobicat_tui::TuiOptions;
 use tokio::sync::mpsc;
 
-#[derive(clap::Args)]
+#[derive(clap::Args, Clone)]
 pub struct SynthArgs {
     /// Lines per second.
     #[arg(long, default_value_t = 2000)]

@@ -56,6 +56,8 @@ cargo binstall mobicat
 cargo install --locked mobicat
 ```
 
+Shell completions and a man page: `mobicat completions zsh` (or `bash`, `fish`, `powershell`, `elvish`) and `mobicat man`.
+
 You also need:
 
 - Android: `adb` (Android SDK platform-tools) on your `PATH`.
@@ -168,7 +170,7 @@ keep = ["Choreographer"]    # show a tag hidden by default
 - **iPhone:** the device's os_trace relay over usbmuxd (through [idevice](https://github.com/jkcoxson/idevice)), with the same rules. Only lines from the app's current install are kept, so a debug and a release build side by side stay apart.
 - Multi-line messages (stack traces) are grouped into one entry, and crash patterns for each platform are marked.
 
-More detail: [requirements](https://github.com/yamamoto7/mobicat/blob/main/docs/requirements.md), [architecture](https://github.com/yamamoto7/mobicat/blob/main/docs/architecture.md), [technical notes](https://github.com/yamamoto7/mobicat/blob/main/docs/technical-notes.md), [coding agents](https://github.com/yamamoto7/mobicat/blob/main/docs/agents.md).
+More detail: [requirements](https://github.com/yamamoto7/mobicat/blob/main/docs/requirements.md), [architecture](https://github.com/yamamoto7/mobicat/blob/main/docs/architecture.md), [technical notes](https://github.com/yamamoto7/mobicat/blob/main/docs/technical-notes.md), [coding agents](https://github.com/yamamoto7/mobicat/blob/main/docs/agents.md), [what stays stable](https://github.com/yamamoto7/mobicat/blob/main/docs/stability.md).
 
 ## Roadmap
 

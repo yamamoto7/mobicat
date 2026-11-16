@@ -56,6 +56,8 @@ cargo binstall mobicat
 cargo install --locked mobicat
 ```
 
+シェルの補完と man ページは `mobicat completions zsh`（`bash`、`fish`、`powershell`、`elvish` も可）と `mobicat man` で出せます。
+
 あわせて次のものが必要です。
 
 - Android：`adb`（Android SDK の platform-tools）に `PATH` が通っていること
@@ -168,7 +170,7 @@ keep = ["Choreographer"]    # 既定で隠す tag を表示に戻す
 - **iPhone**：usbmuxd 経由で端末の os_trace relay を使います（[idevice](https://github.com/jkcoxson/idevice) を利用）。判定のしかたはシミュレータと同じです。アプリの今のインストール先から出た行だけを残すので、デバッグ版とリリース版を並べて入れていても混ざりません。
 - 複数行のメッセージ（スタックトレース）は1件にまとめ、OS ごとのクラッシュの形に印を付けます。
 
-詳しくは、[requirements](docs/requirements.md)、[architecture](docs/architecture.md)、[technical notes](docs/technical-notes.md)、[coding agents](docs/agents.md)（いずれも英語）を見てください。
+詳しくは、[requirements](docs/requirements.md)、[architecture](docs/architecture.md)、[technical notes](docs/technical-notes.md)、[coding agents](docs/agents.md)、[stability](docs/stability.md)（いずれも英語）を見てください。
 
 ## 今後の予定
 

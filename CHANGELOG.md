@@ -6,6 +6,15 @@ All notable changes are listed here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- `mobicat completions <shell>` and `mobicat man` (#12).
+- [docs/stability.md](docs/stability.md): what scripts and agents can rely on: flags, `--json` keys, exit codes, config keys (#13).
+
+### Fixed
+
+- A closed pipe (`mobicat man | head`) is no longer reported as an error.
+
 ## [0.2.0] - 2026-11-16
 
 ### Added

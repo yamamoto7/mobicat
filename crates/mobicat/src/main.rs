@@ -6,7 +6,7 @@ use std::path::PathBuf;
 use std::time::Duration;
 
 use anyhow::Result;
-use clap::{Parser, Subcommand, ValueEnum};
+use clap::{CommandFactory, Parser, Subcommand, ValueEnum};
 
 /// Android and iOS app logs in one terminal UI.
 ///
@@ -118,6 +118,13 @@ pub enum Command {
     Devices,
     /// Show which config files are used and the resulting settings.
     Config,
+    /// Print a shell completion script, e.g. `mobicat completions zsh > _mobicat`.
+    Completions {
+        #[arg(value_enum)]
+        shell: clap_complete::Shell,
+    },
+    /// Print the man page (roff), e.g. `mobicat man > mobicat.1`.
+    Man,
     /// Developer tools.
     #[command(hide = true, subcommand)]
     Dev(DevCommand),
@@ -131,11 +138,38 @@ pub enum DevCommand {
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
-    match cli.command {
-        Some(Command::Dev(DevCommand::Synth(args))) => synth::run(args),
+    let r = run(&cli);
+    // `mobicat man | head` and the like: a closed pipe is not an error.
+    match r {
+        Err(e)
+            if e.downcast_ref::<std::io::Error>()
+                .is_some_and(|e| e.kind() == std::io::ErrorKind::BrokenPipe) =>
+        {
+            Ok(())
+        }
+        r => r,
+    }
+}
+
+fn run(cli: &Cli) -> Result<()> {
+    match &cli.command {
+        Some(Command::Dev(DevCommand::Synth(args))) => synth::run(args.clone()),
         Some(Command::Devices) => run::devices(),
         Some(Command::Config) => run::show_config(),
-        None => run::logs(&cli),
+        Some(Command::Completions { shell }) => {
+            clap_complete::generate(
+                *shell,
+                &mut Cli::command(),
+                "mobicat",
+                &mut std::io::stdout(),
+            );
+            Ok(())
+        }
+        Some(Command::Man) => {
+            clap_mangen::Man::new(Cli::command()).render(&mut std::io::stdout())?;
+            Ok(())
+        }
+        None => run::logs(cli),
     }
 }
 
