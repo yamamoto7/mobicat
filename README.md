@@ -179,9 +179,9 @@ More detail: [requirements](https://github.com/yamamoto7/mobicat/blob/main/docs/
 
 mobicat should pick up your app's logs wherever it runs.
 
-- Past logs and crash reports from iPhones
-- More kinds of logs, such as iOS crash reports and Android bug reports
-- An MCP server for agents that prefer one
+- Windows checked on real machines ([#14](https://github.com/yamamoto7/mobicat/issues/14))
+- More package managers: Scoop, winget, AUR, nixpkgs, homebrew-core ([#7](https://github.com/yamamoto7/mobicat/issues/7))
+- iPhones on Linux (usbmuxd) and over Wi-Fi
 
 Ideas and bug reports are welcome in [issues](https://github.com/yamamoto7/mobicat/issues).
 

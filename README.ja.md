@@ -179,9 +179,9 @@ keep = ["Choreographer"]    # 既定で隠す tag を表示に戻す
 
 アプリがどこで動いていても、そのログを拾えるようにしていきます。
 
-- iPhone の過去のログとクラッシュレポート
-- 扱えるログを増やす（iOS のクラッシュレポート、Android のバグレポートなど）
-- MCP を使いたいエージェント向けの MCP サーバー
+- Windows の実機での確認（[#14](https://github.com/yamamoto7/mobicat/issues/14)）
+- パッケージマネージャを増やす：Scoop、winget、AUR、nixpkgs、homebrew-core（[#7](https://github.com/yamamoto7/mobicat/issues/7)）
+- Linux（usbmuxd）と Wi-Fi でつないだ iPhone
 
 アイデアや不具合の報告は [issues](https://github.com/yamamoto7/mobicat/issues) へどうぞ。日本語でもかまいません。
 
