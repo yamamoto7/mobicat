@@ -5,7 +5,8 @@ Scripts, CI jobs and coding agents call mobicat like any other command. This pag
 ## Flags and commands
 
 - The flags in `mobicat --help` and their meaning.
-- The subcommands: `devices`, `config`, `completions`, `man`.
+- The subcommands: `devices`, `config`, `completions`, `man`, `mcp`.
+- The MCP tools of `mobicat mcp` and their arguments.
 - New flags and subcommands can be added in any version.
 - The text of human-readable output (`--plain`, `mobicat devices`, error messages) is for people and can change. Parse `--json` instead.
 

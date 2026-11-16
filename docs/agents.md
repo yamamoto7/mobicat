@@ -96,3 +96,30 @@ The plugin does not install the `mobicat` command itself; see
 
 For other agents, copy the commands at the top of this page into your
 `AGENTS.md` or the agent's instructions.
+
+## MCP server
+
+For agents and setups that prefer MCP tools, `mobicat mcp` runs an MCP server
+over stdio. Its tools run the same commands as above:
+
+| Tool | Same as |
+|---|---|
+| `devices` | `mobicat devices` |
+| `logs` (`app`, `last`, `query`, `device`, `json`) | `mobicat <app> --last 5m -q <query>` |
+| `crashes` (`app`, `last`, `device`, `json`) | `mobicat <app> --last 30m -q is:crash` |
+| `follow` (`app`, `for`, `launch`, `query`, `device`, `json`) | `mobicat <app> --for 20s [--launch]` |
+
+Claude Code:
+
+```
+claude mcp add mobicat -- mobicat mcp
+```
+
+Other clients (Cursor, Codex, and others that read an `mcpServers` config):
+
+```json
+{ "mcpServers": { "mobicat": { "command": "mobicat", "args": ["mcp"] } } }
+```
+
+Output over 100 KB is cut from the start, so the newest lines are kept.
+

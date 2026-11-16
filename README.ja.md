@@ -17,7 +17,7 @@ mobicat は、Android の端末とエミュレータ、iPhone、iOS シミュレ
 
 - **両方の OS で作っているなら**：Android Studio の Logcat と Xcode のコンソールは、別々の道具で、絞り込みの書き方も違います。mobicat なら1つで済みます。`Tab` で Pixel と iPhone を切り替えられ、同じ絞り込みが両方に効きます。
 - **iOS だけなら**：シミュレータには pidcat にあたるものがありません。`log stream --predicate` を手で書く代わりに、`mobicat com.example.app` で済みます。
-- **AI エージェントと開発しているなら**：エージェントにも同じものを見せられます。`mobicat com.example.app --last 5m` は直近のログを出して終わるので、Claude Code や Codex、Cursor がクラッシュを読んで直せます。
+- **AI エージェントと開発しているなら**：エージェントにも同じものを見せられます。`mobicat com.example.app --last 5m` は直近のログを出して終わるので、Claude Code や Codex、Cursor がクラッシュを読んで直せます。MCP サーバー（`mobicat mcp`）もあります。
 
 |  | mobicat | Android Studio の Logcat | Xcode のコンソール | pidcat |
 |---|:-:|:-:|:-:|:-:|

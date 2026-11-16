@@ -1,4 +1,5 @@
 mod config;
+mod mcp;
 mod run;
 mod synth;
 
@@ -126,6 +127,8 @@ pub enum Command {
     },
     /// Print the man page (roff), e.g. `mobicat man > mobicat.1`.
     Man,
+    /// Run an MCP server over stdio, for coding agents that use MCP tools.
+    Mcp,
     /// Developer tools.
     #[command(hide = true, subcommand)]
     Dev(DevCommand),
@@ -166,6 +169,7 @@ fn run(cli: &Cli) -> Result<()> {
             );
             Ok(())
         }
+        Some(Command::Mcp) => mcp::serve(),
         Some(Command::Man) => {
             clap_mangen::Man::new(Cli::command()).render(&mut std::io::stdout())?;
             Ok(())

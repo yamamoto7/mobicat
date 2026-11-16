@@ -1149,6 +1149,7 @@ dependencies = [
  "mobicat-core",
  "mobicat-sources",
  "mobicat-tui",
+ "serde_json",
  "strsim",
  "tokio",
  "toml",

@@ -17,7 +17,7 @@ mobicat shows only your app's logs from Android devices and emulators, iPhones a
 
 - **Building for both platforms?** Logcat and the Xcode console are two tools with two ways to filter. mobicat is one: press `Tab` to switch between your Pixel and your iPhone, and the same filter works on both.
 - **iOS only?** The simulator has no pidcat. You can write `log stream --predicate` by hand, or run `mobicat com.example.app`.
-- **Working with an AI agent?** Give it the same view. `mobicat com.example.app --last 5m` prints what happened and exits, so Claude Code, Codex or Cursor can read the crash and fix it.
+- **Working with an AI agent?** Give it the same view. `mobicat com.example.app --last 5m` prints what happened and exits, so Claude Code, Codex or Cursor can read the crash and fix it. There is also an MCP server (`mobicat mcp`).
 
 |  | mobicat | Android Studio Logcat | Xcode console | pidcat |
 |---|:-:|:-:|:-:|:-:|
