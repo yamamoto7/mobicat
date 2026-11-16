@@ -9,6 +9,7 @@ All notable changes are listed here. The format follows
 ### Added
 
 - Crash reports from iOS simulators (#5): when the app crashes, the `.ips` report macOS writes shows up as a crash entry with the exception and the crashed thread's frames, with file and line. `--last` includes reports from that window. In `--json`, `source` is `report`.
+- `--file` opens Android bug reports (`adb bugreport` zips) and reads their system, event and crash log sections (#6).
 - `mobicat completions <shell>` and `mobicat man` (#12).
 - [docs/stability.md](docs/stability.md): what scripts and agents can rely on: flags, `--json` keys, exit codes, config keys (#13).
 

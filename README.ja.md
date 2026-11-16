@@ -100,6 +100,9 @@ mobicat com.example.app -l W -t OkHttp -i Chatty -s emulator-5554
 # 保存したログを読む（logcat のテキストか log stream の ndjson）
 mobicat --file saved.log
 
+# Android の bugreport に入っているログを読む
+mobicat --file bugreport.zip -q 'level:error'
+
 # つながっている端末、iPhone、起動中のシミュレータを一覧する
 mobicat devices
 ```

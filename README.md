@@ -100,6 +100,9 @@ mobicat com.example.app -l W -t OkHttp -i Chatty -s emulator-5554
 # Read a saved log (logcat text or `log stream` ndjson)
 mobicat --file saved.log
 
+# Read the logs in an Android bug report
+mobicat --file bugreport.zip -q 'level:error'
+
 # List connected devices, iPhones and booted simulators
 mobicat devices
 ```

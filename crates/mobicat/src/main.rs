@@ -93,7 +93,8 @@ pub struct Cli {
     #[arg(long = "for", value_name = "DURATION", value_parser = duration, conflicts_with = "file")]
     pub follow_for: Option<Duration>,
 
-    /// Read a saved log (logcat text or `log stream` ndjson). `-` reads stdin.
+    /// Read a saved log: logcat text, `log stream` ndjson, or an Android bug
+    /// report zip (`adb bugreport`). `-` reads stdin.
     #[arg(long, value_name = "PATH", conflicts_with = "launch")]
     pub file: Option<String>,
 
