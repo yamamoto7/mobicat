@@ -6,6 +6,8 @@ All notable changes are listed here. The format follows
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-16
+
 ### Added
 
 - `--launch` on iPhones also captures the app's stdout and stderr (`print()`, `NSLog`), through `xcrun devicectl --console` (#17).
@@ -69,7 +71,8 @@ All notable changes are listed here. The format follows
 - The last 5 minutes of logs on iOS too (`log show`), not only on Android.
 - Config files (`~/.config/mobicat/config.toml`, `.mobicat.toml`) with profiles.
 
-[Unreleased]: https://github.com/yamamoto7/mobicat/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/yamamoto7/mobicat/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/yamamoto7/mobicat/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/yamamoto7/mobicat/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/yamamoto7/mobicat/compare/v0.1.2...v0.2.0
 [0.1.2]: https://github.com/yamamoto7/mobicat/compare/v0.1.1...v0.1.2
