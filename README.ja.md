@@ -62,7 +62,7 @@ cargo install --locked mobicat
 
 - Android：`adb`（Android SDK の platform-tools）に `PATH` が通っていること
 - iOS シミュレータ：macOS と Xcode（`xcrun simctl`）
-- iPhone と iPad：つないで「このコンピュータを信頼」済みであること（macOS に入っている usbmuxd を使います）。sudo は要りません。過去のログ（`--last`）と `print()` の出力は、今はシミュレータだけです。
+- iPhone と iPad：つないで「このコンピュータを信頼」済みであること（macOS に入っている usbmuxd を使います）。sudo は要りません。過去のログ（`--last`）は、今はシミュレータだけです。
 
 Claude Code では、プラグインを入れると mobicat を使う skill が加わります（先に mobicat 本体を入れてください）。
 

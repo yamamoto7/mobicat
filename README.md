@@ -62,7 +62,7 @@ You also need:
 
 - Android: `adb` (Android SDK platform-tools) on your `PATH`.
 - iOS simulators: macOS with Xcode (`xcrun simctl`).
-- iPhones and iPads: connected and trusted (usbmuxd, which comes with macOS). No sudo needed. Past logs (`--last`) and `print()` output are simulator-only for now.
+- iPhones and iPads: connected and trusted (usbmuxd, which comes with macOS). No sudo needed. Past logs (`--last`) are simulator-only for now.
 
 For Claude Code, the plugin adds a skill that runs mobicat for you (install the command first):
 

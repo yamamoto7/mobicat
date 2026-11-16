@@ -73,7 +73,8 @@ A `.mobicat.toml` with `app = "..."` in the repository saves passing it each tim
 - iOS `print()` output goes to stdout, not to the system log. It is captured
   only with `--launch`, which restarts the app.
 - On iPhones, only new lines can be read for now: use `--for`, not `--last`
-  alone. `--launch` restarts the app with `xcrun devicectl` (macOS).
+  alone. `--launch` restarts the app with `xcrun devicectl` (macOS) and also
+  captures its stdout.
 
 ## Claude Code plugin
 

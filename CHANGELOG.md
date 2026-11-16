@@ -6,6 +6,10 @@ All notable changes are listed here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- `--launch` on iPhones also captures the app's stdout and stderr (`print()`), through `xcrun devicectl --console` (#17).
+
 ## [0.3.0] - 2026-11-16
 
 ### Added

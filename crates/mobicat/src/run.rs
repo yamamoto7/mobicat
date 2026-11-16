@@ -640,19 +640,9 @@ fn start(rt: &Runtime, planned: Vec<Planned>, tx: &mpsc::Sender<Entry>, relaunch
                     let (udid, bundle) = (cfg.udid.clone(), cfg.app.bundle_id.clone());
                     let tx = tx.clone();
                     rt.spawn(async move {
+                        // Let the relay attach first so the startup is captured.
                         tokio::time::sleep(Duration::from_millis(700)).await;
-                        if let Err(e) = launch::restart_ios_device(&udid, &bundle).await {
-                            let _ = tx
-                                .send(Entry::system(
-                                    Platform::Ios,
-                                    Arc::from(udid.as_str()),
-                                    None,
-                                    now_ns(),
-                                    Level::Error,
-                                    format!("--launch: {e:#}"),
-                                ))
-                                .await;
-                        }
+                        launch::ios_device_console(udid, bundle, tx).await;
                     });
                 }
                 rt.spawn(iosdevice::stream(cfg, tx));

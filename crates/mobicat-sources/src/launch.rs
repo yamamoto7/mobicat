@@ -14,11 +14,34 @@ use crate::proc;
 
 const TIMEOUT: Duration = Duration::from_secs(20);
 
-/// Restart an app on a physical iPhone with `xcrun devicectl` (Xcode 15+,
-/// macOS only).
-pub async fn restart_ios_device(udid: &str, bundle_id: &str) -> anyhow::Result<()> {
+/// Restart the app on a physical iPhone with `xcrun devicectl ... --console`
+/// and turn its stdout and stderr into entries, like `ios_console` does for
+/// simulators. devicectl prints its own progress first; app output starts
+/// after "Waiting for the application to terminate".
+pub async fn ios_device_console(udid: String, bundle_id: String, tx: mpsc::Sender<Entry>) {
+    let device: Arc<str> = Arc::from(udid.as_str());
+    let app: Arc<str> = Arc::from(bundle_id.as_str());
+    let tag: Arc<str> = Arc::from("stdout");
+    let annot = Annotator::default();
+    let now = || jiff::Timestamp::now().as_nanosecond() as i64;
+    let note = |level: Level, msg: String| {
+        Entry::system(
+            Platform::Ios,
+            device.clone(),
+            Some(app.clone()),
+            now(),
+            level,
+            msg,
+        )
+    };
     if !cfg!(target_os = "macos") {
-        anyhow::bail!("restarting apps on iPhones needs Xcode (macOS)");
+        let _ = tx
+            .send(note(
+                Level::Warn,
+                "--launch on iPhones needs Xcode (macOS)".into(),
+            ))
+            .await;
+        return;
     }
     let mut c = Command::new("xcrun");
     c.args([
@@ -26,13 +49,69 @@ pub async fn restart_ios_device(udid: &str, bundle_id: &str) -> anyhow::Result<(
         "device",
         "process",
         "launch",
+        "--console",
         "--terminate-existing",
         "--device",
-        udid,
-        bundle_id,
+        &udid,
+        &bundle_id,
     ]);
-    proc::output(c, TIMEOUT).await?;
-    Ok(())
+    let mut s = match proc::spawn_stream(c) {
+        Ok(s) => s,
+        Err(e) => {
+            let _ = tx
+                .send(note(Level::Error, format!("--launch: {e:#}")))
+                .await;
+            return;
+        }
+    };
+    let mut started = false;
+    while let Ok(Some(line)) = s.lines.next_line().await {
+        if !started {
+            if line.starts_with("Waiting for the application to terminate") {
+                started = true;
+                if tx
+                    .send(note(
+                        Level::Info,
+                        "relaunched the app; capturing stdout".into(),
+                    ))
+                    .await
+                    .is_err()
+                {
+                    return;
+                }
+            }
+            continue;
+        }
+        if line.starts_with("App terminated due to") {
+            let _ = tx.send(note(Level::Info, line)).await;
+            continue;
+        }
+        let mut e = Entry::system(
+            Platform::Ios,
+            device.clone(),
+            Some(app.clone()),
+            now(),
+            Level::Info,
+            line,
+        );
+        e.source = Source::Stdout;
+        e.tag = tag.clone();
+        if tx.send(annot.done(e)).await.is_err() {
+            return;
+        }
+    }
+    let why = s.finish().await;
+    if !started {
+        let why = why
+            .lines()
+            .map(str::trim)
+            .find(|l| !l.is_empty())
+            .unwrap_or("devicectl failed")
+            .to_owned();
+        let _ = tx
+            .send(note(Level::Error, format!("--launch: {why}")))
+            .await;
+    }
 }
 
 /// Force-stop and start the app's launcher activity.
