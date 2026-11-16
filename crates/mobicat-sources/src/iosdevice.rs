@@ -330,6 +330,17 @@ pub async fn stream(cfg: DeviceStream, tx: mpsc::Sender<Entry>) {
     let annot = Annotator::default();
     if !cfg.backlog.is_zero() && past_supported() {
         let since = now_ns() - i64::try_from(cfg.backlog.as_nanos()).unwrap_or(i64::MAX);
+        if !cfg.dump
+            && tx
+                .send(note(
+                    Level::Info,
+                    "reading earlier logs from the iPhone (a few seconds)".into(),
+                ))
+                .await
+                .is_err()
+        {
+            return;
+        }
         if let Err(e) = past(&cfg, since, &mut ctx, &annot, &tx).await {
             let _ = tx
                 .send(note(Level::Warn, format!("past logs: {e:#}")))
