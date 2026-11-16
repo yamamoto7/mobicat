@@ -8,7 +8,7 @@ All notable changes are listed here. The format follows
 
 ### Added
 
-- `--launch` on iPhones also captures the app's stdout and stderr (`print()`), through `xcrun devicectl --console` (#17).
+- `--launch` on iPhones also captures the app's stdout and stderr (`print()`, `NSLog`), through `xcrun devicectl --console` (#17).
 - Past logs from iPhones (#16): `--last` and the TUI's first 5 minutes read the device's log archive (macOS, through `log show`).
 - Crash reports from iPhones (#18): new `.ips` reports for the app are fetched from the device (crashreportcopymobile) and shown as crash entries, as on simulators.
 

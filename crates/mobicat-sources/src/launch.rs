@@ -44,6 +44,9 @@ pub async fn ios_device_console(udid: String, bundle_id: String, tx: mpsc::Sende
         return;
     }
     let mut c = Command::new("xcrun");
+    // Through a pipe the app's stdout is block-buffered and would arrive at
+    // exit; Xcode sets the same variable for its console.
+    c.env("DEVICECTL_CHILD_NSUnbufferedIO", "YES");
     c.args([
         "devicectl",
         "device",
@@ -55,17 +58,40 @@ pub async fn ios_device_console(udid: String, bundle_id: String, tx: mpsc::Sende
         &udid,
         &bundle_id,
     ]);
-    let mut s = match proc::spawn_stream(c) {
-        Ok(s) => s,
+    c.stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .stdin(std::process::Stdio::null())
+        .kill_on_drop(true);
+    let mut child = match c.spawn() {
+        Ok(ch) => ch,
         Err(e) => {
             let _ = tx
-                .send(note(Level::Error, format!("--launch: {e:#}")))
+                .send(note(
+                    Level::Error,
+                    format!("--launch: could not run devicectl: {e}"),
+                ))
                 .await;
             return;
         }
     };
+    // devicectl prints its progress and the app's stdout on stdout, and the
+    // app's stderr (NSLog and friends) on stderr. Read both.
+    let mut out = child.stdout.take().map(proc::LineReader::new);
+    let mut err = child.stderr.take().map(proc::LineReader::new);
     let mut started = false;
-    while let Ok(Some(line)) = s.lines.next_line().await {
+    let mut failure = String::new();
+    loop {
+        let (line, is_err) = tokio::select! {
+            l = async { out.as_mut().unwrap().next_line().await }, if out.is_some() => match l {
+                Ok(Some(l)) => (l, false),
+                _ => { out = None; continue; }
+            },
+            l = async { err.as_mut().unwrap().next_line().await }, if err.is_some() => match l {
+                Ok(Some(l)) => (l, true),
+                _ => { err = None; continue; }
+            },
+            else => break,
+        };
         if !started {
             if line.starts_with("Waiting for the application to terminate") {
                 started = true;
@@ -79,6 +105,8 @@ pub async fn ios_device_console(udid: String, bundle_id: String, tx: mpsc::Sende
                 {
                     return;
                 }
+            } else if is_err && failure.is_empty() && !line.trim().is_empty() {
+                failure = line.trim().to_owned();
             }
             continue;
         }
@@ -94,20 +122,23 @@ pub async fn ios_device_console(udid: String, bundle_id: String, tx: mpsc::Sende
             Level::Info,
             line,
         );
-        e.source = Source::Stdout;
+        e.source = if is_err {
+            Source::Stderr
+        } else {
+            Source::Stdout
+        };
         e.tag = tag.clone();
         if tx.send(annot.done(e)).await.is_err() {
             return;
         }
     }
-    let why = s.finish().await;
+    let _ = child.wait().await;
     if !started {
-        let why = why
-            .lines()
-            .map(str::trim)
-            .find(|l| !l.is_empty())
-            .unwrap_or("devicectl failed")
-            .to_owned();
+        let why = if failure.is_empty() {
+            "devicectl failed".to_owned()
+        } else {
+            failure
+        };
         let _ = tx
             .send(note(Level::Error, format!("--launch: {why}")))
             .await;
