@@ -175,6 +175,94 @@ fn parse_app(bundle_id: &str, v: &plist::Value) -> Option<AppInfo> {
 pub struct DeviceStream {
     pub udid: String,
     pub app: AppInfo,
+    /// How far back to start. `Duration::ZERO` = only new lines. Past lines
+    /// need macOS (`log show` reads the device's log archive).
+    pub backlog: Duration,
+    /// Print the backlog and stop.
+    pub dump: bool,
+}
+
+/// Whether past logs can be read from iPhones here.
+pub fn past_supported() -> bool {
+    cfg!(target_os = "macos")
+}
+
+/// Read the device's log archive from `since` (Unix ns) and send the app's
+/// entries. Returns the time of the last one sent, or `since`.
+async fn past(
+    cfg: &DeviceStream,
+    since: i64,
+    ctx: &mut OsLogContext,
+    annot: &Annotator,
+    tx: &mpsc::Sender<Entry>,
+) -> Result<i64> {
+    let dir = std::env::temp_dir().join(format!("mobicat-{}-{}", std::process::id(), cfg.udid));
+    let _ = tokio::fs::remove_dir_all(&dir).await;
+    tokio::fs::create_dir_all(&dir).await?;
+    let result = past_in(cfg, since, ctx, annot, tx, &dir).await;
+    let _ = tokio::fs::remove_dir_all(&dir).await;
+    result
+}
+
+async fn past_in(
+    cfg: &DeviceStream,
+    since: i64,
+    ctx: &mut OsLogContext,
+    annot: &Annotator,
+    tx: &mpsc::Sender<Entry>,
+    dir: &std::path::Path,
+) -> Result<i64> {
+    let d = find(&cfg.udid).await?;
+    let p = provider(&d);
+    let tar = dir.join("logs.tar");
+    {
+        let mut client = timed("os_trace_relay", OsTraceRelayClient::connect(&p)).await?;
+        let mut f = tokio::fs::File::create(&tar).await?;
+        let start = u64::try_from(since.div_euclid(1_000_000_000)).unwrap_or(0);
+        tokio::time::timeout(
+            Duration::from_secs(180),
+            client.create_archive(&mut f, None, None, Some(start)),
+        )
+        .await
+        .map_err(|_| anyhow!("reading the iPhone's log archive timed out"))?
+        .map_err(|e| anyhow!("reading the iPhone's log archive: {e}"))?;
+        tokio::io::AsyncWriteExt::flush(&mut f).await?;
+    }
+    let archive = dir.join("device.logarchive");
+    tokio::fs::create_dir_all(&archive).await?;
+    let mut c = tokio::process::Command::new("tar");
+    c.arg("-xf").arg(&tar).arg("-C").arg(&archive);
+    crate::proc::output(c, Duration::from_secs(120)).await?;
+    let mut c = tokio::process::Command::new("log");
+    c.arg("show")
+        .arg("--archive")
+        .arg(&archive)
+        .args(["--style", "ndjson", "--info", "--debug", "--start"])
+        .arg(format!("@{}", since.div_euclid(1_000_000_000)))
+        .arg("--predicate")
+        .arg(format!(
+            "process == \"{}\"",
+            cfg.app
+                .executable
+                .replace('\\', "\\\\")
+                .replace('"', "\\\"")
+        ));
+    let mut s = crate::proc::spawn_stream(c)?;
+    let mut last = since;
+    while let Ok(Some(line)) = s.lines.next_line().await {
+        let Some(e) = oslog::parse_line(&line, ctx) else {
+            continue;
+        };
+        if e.time_ns < since {
+            continue;
+        }
+        last = last.max(e.time_ns);
+        if tx.send(annot.done(e)).await.is_err() {
+            break;
+        }
+    }
+    let _ = s.finish().await;
+    Ok(last)
 }
 
 /// The relay's levels, named as `log stream` names them.
@@ -240,6 +328,17 @@ pub async fn stream(cfg: DeviceStream, tx: mpsc::Sender<Entry>) {
     let mut ctx = OsLogContext::new(device.clone(), Some(cfg.app.clone()));
     ctx.same_install = true;
     let annot = Annotator::default();
+    if !cfg.backlog.is_zero() && past_supported() {
+        let since = now_ns() - i64::try_from(cfg.backlog.as_nanos()).unwrap_or(i64::MAX);
+        if let Err(e) = past(&cfg, since, &mut ctx, &annot, &tx).await {
+            let _ = tx
+                .send(note(Level::Warn, format!("past logs: {e:#}")))
+                .await;
+        }
+    }
+    if cfg.dump {
+        return;
+    }
     let mut pids = HashSet::new();
     // Say so once per outage, not on every retry.
     let mut quiet = false;

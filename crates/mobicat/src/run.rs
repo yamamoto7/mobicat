@@ -442,10 +442,10 @@ async fn plan(cli: &Cli, s: &Settings) -> Result<(Vec<Planned>, Vec<String>)> {
         }
         for d in phones.into_iter().filter(|d| wanted(&d.udid)) {
             checked.push(d.name.clone());
-            if dump {
+            if dump && !iosdevice::past_supported() {
                 no_past += 1;
                 warnings.push(format!(
-                    "{}: past logs are not available from iPhones yet; use --for to follow",
+                    "{}: past logs from iPhones need macOS; use --for to follow",
                     d.name
                 ));
                 continue;
@@ -453,7 +453,12 @@ async fn plan(cli: &Cli, s: &Settings) -> Result<(Vec<Planned>, Vec<String>)> {
             match iosdevice::app_info(&d.udid, bundle).await {
                 Ok(Some(app)) => planned.push(Planned::IosDevice {
                     label: d.name.clone(),
-                    cfg: DeviceStream { udid: d.udid, app },
+                    cfg: DeviceStream {
+                        udid: d.udid,
+                        app,
+                        backlog,
+                        dump,
+                    },
                 }),
                 Ok(None) => {
                     let apps = iosdevice::user_apps(&d.udid).await.unwrap_or_default();
@@ -645,7 +650,9 @@ fn start(rt: &Runtime, planned: Vec<Planned>, tx: &mpsc::Sender<Entry>, relaunch
                         launch::ios_device_console(udid, bundle, tx).await;
                     });
                 }
-                rt.spawn(iosdevice::watch_reports(cfg.clone(), tx.clone()));
+                if !cfg.dump {
+                    rt.spawn(iosdevice::watch_reports(cfg.clone(), tx.clone()));
+                }
                 rt.spawn(iosdevice::stream(cfg, tx));
             }
             Planned::File(path) => {
@@ -1013,7 +1020,12 @@ async fn watch_devices(store: mobicat_tui::SharedStore, w: Watch) {
                     if let Ok(Some(app)) = iosdevice::app_info(&key, bundle).await {
                         let name = iosdevice::name(&key).await;
                         store.lock().expect("store lock").add_device(&key, p, &name);
-                        let cfg = DeviceStream { udid: key, app };
+                        let cfg = DeviceStream {
+                            udid: key,
+                            app,
+                            backlog: w.backlog,
+                            dump: false,
+                        };
                         tokio::spawn(iosdevice::watch_reports(cfg.clone(), w.tx.clone()));
                         tokio::spawn(iosdevice::stream(cfg, w.tx.clone()));
                     }
