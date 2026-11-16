@@ -10,6 +10,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::{Context, Result, anyhow};
+use idevice::crashreportcopymobile::{CrashReportCopyMobileClient, flush_reports};
 use idevice::installation_proxy::InstallationProxyClient;
 use idevice::lockdown::LockdownClient;
 use idevice::os_trace_relay::{LogLevel, OsTraceLog, OsTraceRelayClient};
@@ -19,6 +20,7 @@ use idevice::{IdeviceError, IdeviceService};
 use mobicat_core::{Annotator, Entry, Level, Platform};
 use tokio::sync::mpsc;
 
+use crate::ips;
 pub use crate::oslog::AppInfo;
 use crate::oslog::{self, OsLogContext, OsRecord};
 
@@ -316,6 +318,78 @@ async fn follow(
             return Ok(());
         }
     }
+}
+
+/// Report names on the device for the app's executable.
+async fn report_names(p: &UsbmuxdProvider, executable: &str) -> Result<Vec<String>> {
+    // Move pending reports where crashreportcopymobile can see them.
+    let _ = timed("crashreportmover", flush_reports(p)).await;
+    let mut c = timed(
+        "crashreportcopymobile",
+        CrashReportCopyMobileClient::connect(p),
+    )
+    .await?;
+    let prefix = format!("{executable}-");
+    let mut names: Vec<String> = timed("crashreportcopymobile", c.ls(None))
+        .await?
+        .into_iter()
+        .filter(|n| n.starts_with(&prefix) && n.ends_with(".ips"))
+        .collect();
+    names.sort();
+    Ok(names)
+}
+
+/// Turn new crash reports for the app on the device into crash entries,
+/// until the receiver is gone. Reports already there at the start are
+/// skipped (they are past crashes).
+pub async fn watch_reports(cfg: DeviceStream, tx: mpsc::Sender<Entry>) {
+    let device: Arc<str> = Arc::from(cfg.udid.as_str());
+    let app_id: Arc<str> = Arc::from(cfg.app.bundle_id.as_str());
+    let mut seen: Option<HashSet<String>> = None;
+    loop {
+        if let Ok(d) = find(&cfg.udid).await {
+            let p = provider(&d);
+            if let Ok(names) = report_names(&p, &cfg.app.executable).await {
+                match &mut seen {
+                    None => seen = Some(names.into_iter().collect()),
+                    Some(seen) => {
+                        for n in names {
+                            if !seen.insert(n.clone()) {
+                                continue;
+                            }
+                            let Some(r) = pull_report(&p, &n).await else {
+                                continue;
+                            };
+                            if r.bundle_id != cfg.app.bundle_id
+                                || !r.proc_path.starts_with(&cfg.app.app_path)
+                            {
+                                continue;
+                            }
+                            let e = ips::entry(&r, device.clone(), app_id.clone(), now_ns(), &n);
+                            if tx.send(e).await.is_err() {
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        tokio::select! {
+            () = tokio::time::sleep(Duration::from_secs(5)) => {}
+            () = tx.closed() => return,
+        }
+    }
+}
+
+async fn pull_report(p: &UsbmuxdProvider, name: &str) -> Option<ips::Report> {
+    let mut c = timed(
+        "crashreportcopymobile",
+        CrashReportCopyMobileClient::connect(p),
+    )
+    .await
+    .ok()?;
+    let data = timed("crashreportcopymobile", c.pull(name)).await.ok()?;
+    ips::parse(&String::from_utf8_lossy(&data))
 }
 
 fn now_ns() -> i64 {

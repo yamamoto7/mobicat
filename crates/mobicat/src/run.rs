@@ -645,6 +645,7 @@ fn start(rt: &Runtime, planned: Vec<Planned>, tx: &mpsc::Sender<Entry>, relaunch
                         launch::ios_device_console(udid, bundle, tx).await;
                     });
                 }
+                rt.spawn(iosdevice::watch_reports(cfg.clone(), tx.clone()));
                 rt.spawn(iosdevice::stream(cfg, tx));
             }
             Planned::File(path) => {
@@ -1012,10 +1013,9 @@ async fn watch_devices(store: mobicat_tui::SharedStore, w: Watch) {
                     if let Ok(Some(app)) = iosdevice::app_info(&key, bundle).await {
                         let name = iosdevice::name(&key).await;
                         store.lock().expect("store lock").add_device(&key, p, &name);
-                        tokio::spawn(iosdevice::stream(
-                            DeviceStream { udid: key, app },
-                            w.tx.clone(),
-                        ));
+                        let cfg = DeviceStream { udid: key, app };
+                        tokio::spawn(iosdevice::watch_reports(cfg.clone(), w.tx.clone()));
+                        tokio::spawn(iosdevice::stream(cfg, w.tx.clone()));
                     }
                 }
                 Platform::Ios => {

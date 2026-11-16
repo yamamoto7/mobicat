@@ -202,6 +202,23 @@ fn new_reports(dir: &Path, executable: &str, since: SystemTime) -> Vec<(SystemTi
     v
 }
 
+/// The crash entry for a report.
+pub fn entry(r: &Report, device: Arc<str>, app_id: Arc<str>, time_ns: i64, origin: &str) -> Entry {
+    let mut e = Entry::system(
+        Platform::Ios,
+        device,
+        Some(app_id),
+        time_ns,
+        Level::Fatal,
+        format!("{}\nReport: {origin}", r.text),
+    );
+    e.pid = r.pid;
+    e.source = mobicat_core::Source::Report;
+    e.tag = Arc::from("CrashReport");
+    e.crash = true;
+    e
+}
+
 pub struct Watch {
     pub udid: String,
     pub app: AppInfo,
@@ -234,18 +251,13 @@ pub async fn watch(w: Watch, tx: mpsc::Sender<Entry>) {
             let time_ns = t
                 .duration_since(SystemTime::UNIX_EPOCH)
                 .map_or(0, |d| i64::try_from(d.as_nanos()).unwrap_or(i64::MAX));
-            let mut e = Entry::system(
-                Platform::Ios,
+            let e = entry(
+                &r,
                 device.clone(),
-                Some(app_id.clone()),
+                app_id.clone(),
                 time_ns,
-                Level::Fatal,
-                format!("{}\nReport: {}", r.text, path.display()),
+                &path.display().to_string(),
             );
-            e.pid = r.pid;
-            e.source = mobicat_core::Source::Report;
-            e.tag = Arc::from("CrashReport");
-            e.crash = true;
             if tx.send(e).await.is_err() {
                 return;
             }

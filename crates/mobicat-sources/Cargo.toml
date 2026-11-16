@@ -11,7 +11,7 @@ description = "Log sources for mobicat: adb logcat, iOS simulator log stream, iP
 [dependencies]
 anyhow = "1.0.104"
 chrono = { version = "0.4", default-features = false }
-idevice = { version = "0.1.68", default-features = false, features = ["ring", "usbmuxd", "syslog_relay", "installation_proxy"] }
+idevice = { version = "0.1.68", default-features = false, features = ["ring", "usbmuxd", "syslog_relay", "installation_proxy", "crashreportcopymobile"] }
 jiff = "0.2.39"
 plist = "1"
 mobicat-core = { version = "0.3.0", path = "../mobicat-core" }
