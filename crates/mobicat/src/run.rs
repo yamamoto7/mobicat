@@ -12,7 +12,7 @@ use mobicat_core::{Clock, Entry, Filter, Level, Noise, Platform, Query, Source, 
 use mobicat_sources::android::{self, Adb, AndroidStream};
 use mobicat_sources::iosdevice::{self, DeviceStream};
 use mobicat_sources::iossim::{self, SimStream};
-use mobicat_sources::{file, launch};
+use mobicat_sources::{file, ips, launch};
 use mobicat_tui::{AppItem, TuiOptions};
 use tokio::runtime::Runtime;
 use tokio::sync::mpsc;
@@ -624,6 +624,15 @@ fn start(rt: &Runtime, planned: Vec<Planned>, tx: &mpsc::Sender<Entry>, relaunch
                         launch::ios_console(udid, bundle, tx).await;
                     });
                 }
+                rt.spawn(ips::watch(
+                    ips::Watch {
+                        udid: cfg.udid.clone(),
+                        app: cfg.app.clone(),
+                        backlog: cfg.backlog,
+                        once: cfg.dump,
+                    },
+                    tx.clone(),
+                ));
                 rt.spawn(iossim::stream(cfg, tx));
             }
             Planned::IosDevice { cfg, .. } => {
@@ -1023,6 +1032,15 @@ async fn watch_devices(store: mobicat_tui::SharedStore, w: Watch) {
                     let Some(bundle) = &w.ios else { continue };
                     if let Ok(Some(app)) = iossim::app_info(&key, bundle).await {
                         store.lock().expect("store lock").add_device(&key, p, &name);
+                        tokio::spawn(ips::watch(
+                            ips::Watch {
+                                udid: key.clone(),
+                                app: app.clone(),
+                                backlog: w.backlog,
+                                once: false,
+                            },
+                            w.tx.clone(),
+                        ));
                         tokio::spawn(iossim::stream(
                             SimStream {
                                 udid: key,

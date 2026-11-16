@@ -30,7 +30,7 @@ mobicat shows only your app's logs from Android devices and emulators, iPhones a
 ## Features
 
 - **Your app only.** Android logs are taken by the app's UID, iOS logs by its executable. System noise is hidden by default (`a` shows everything). Restarts don't lose the app; a `── process started (pid N) ──` line marks them.
-- **Crashes stand out.** Java/Kotlin exceptions, native crashes, Swift fatal errors and uncaught exceptions are grouped into one red `✖ CRASH` block with the stack trace. `]c` jumps to the next one. A crash on a device you aren't looking at shows up on its tab.
+- **Crashes stand out.** Java/Kotlin exceptions, native crashes, Swift fatal errors and uncaught exceptions are grouped into one red `✖ CRASH` block with the stack trace. On iOS simulators the crash report macOS writes is added too, with file and line for each frame. `]c` jumps to the next one. A crash on a device you aren't looking at shows up on its tab.
 - **The same on both platforms.** One set of keys, one filter syntax and one crash view for every connected Android device, iPhone and booted simulator. `Tab` switches between them; the All tab shows them together.
 - **Ready for coding agents.** `--last 5m` and `--for 30s` print and exit, as plain lines or NDJSON (`--json`). A [Claude Code plugin](https://github.com/yamamoto7/mobicat/blob/main/docs/agents.md#claude-code-plugin) teaches Claude when to use them. See [Using mobicat from a coding agent](https://github.com/yamamoto7/mobicat/blob/main/docs/agents.md).
 - **Android Studio filter syntax.** `tag:OkHttp level:warn -tag:Chatty`, plus `subsystem:`, `os:`, `fw:rn`, `age:5m` and more. Results update as you type, with completion and history.

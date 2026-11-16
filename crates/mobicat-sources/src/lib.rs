@@ -4,6 +4,7 @@ pub mod android;
 pub mod file;
 pub mod iosdevice;
 pub mod iossim;
+pub mod ips;
 pub mod launch;
 pub mod logcat;
 pub mod oslog;

@@ -35,6 +35,7 @@ impl Widget for Detail<'_> {
             Source::Log => "log",
             Source::Stdout => "stdout",
             Source::Stderr => "stderr",
+            Source::Report => "crash report",
             Source::System => "mobicat",
         };
         let mut lines = vec![

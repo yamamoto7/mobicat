@@ -30,7 +30,7 @@ mobicat は、Android の端末とエミュレータ、iPhone、iOS シミュレ
 ## 特徴
 
 - **自分のアプリだけ**：Android はアプリの UID、iOS は実行ファイルでログを取ります。OS が出すノイズは最初から隠します（`a` で全部表示）。再起動しても見失わず、`── process started (pid N) ──` の行で区切ります。
-- **クラッシュが目立つ**：Java / Kotlin の例外、ネイティブのクラッシュ、Swift の Fatal error、キャッチされなかった例外を、スタックトレースごと赤い `✖ CRASH` の塊にまとめます。`]c` で次のクラッシュへ飛べます。見ていない端末で起きたクラッシュは、その端末のタブに印が付きます。
+- **クラッシュが目立つ**：Java / Kotlin の例外、ネイティブのクラッシュ、Swift の Fatal error、キャッチされなかった例外を、スタックトレースごと赤い `✖ CRASH` の塊にまとめます。iOS シミュレータでは、macOS が書くクラッシュレポートも、各フレームのファイルと行番号つきで加えます。`]c` で次のクラッシュへ飛べます。見ていない端末で起きたクラッシュは、その端末のタブに印が付きます。
 - **両方の OS で同じ使い方**：つながっているすべての Android 端末、iPhone、起動中のシミュレータで、キーも絞り込みの書き方もクラッシュの見え方も同じです。`Tab` で切り替え、All タブでまとめて見られます。
 - **コーディングエージェントから使える**：`--last 5m` と `--for 30s` はログを出して終わります。1行ずつのテキストか、NDJSON（`--json`）で出せます。[Claude Code のプラグイン](docs/agents.md#claude-code-plugin)を入れると、Claude がいつ使えばよいかを覚えます。詳しくは [Using mobicat from a coding agent](docs/agents.md)（英語）を見てください。
 - **Android Studio と同じ絞り込みの書き方**：`tag:OkHttp level:warn -tag:Chatty` に加えて、`subsystem:`、`os:`、`fw:rn`、`age:5m` なども使えます。打つたびに結果が変わり、補完と履歴もあります。

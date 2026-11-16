@@ -25,7 +25,7 @@ One JSON object per line (NDJSON). Every object has `schema`, a number that goes
 | `tag` | string | Logcat tag; on iOS the category, else the last part of the subsystem |
 | `subsystem`, `category` | string | iOS only. Left out when empty |
 | `library` | string | iOS only: the image that logged the line. Left out when empty |
-| `source` | string | `log`, `stdout`, `stderr` (iOS `--launch`) or `system` (mobicat's own notes) |
+| `source` | string | `log`, `stdout`, `stderr` (iOS `--launch`), `report` (an OS crash report) or `system` (mobicat's own notes) |
 | `app_only` | bool | The line comes from the app's own code, not the OS or frameworks |
 | `crash` | bool | Part of a crash. Left out when false |
 | `framework` | string | `react-native`, `flutter`, `kmp` or `capacitor`. Left out for native code |

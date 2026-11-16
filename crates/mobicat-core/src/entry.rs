@@ -112,6 +112,8 @@ pub enum Source {
     Stdout,
     /// The app's stderr (iOS `--launch`).
     Stderr,
+    /// A crash report the OS wrote (iOS `.ips`).
+    Report,
     /// Produced by mobicat itself: process restarts, disconnects, warnings.
     System,
 }
