@@ -9,7 +9,7 @@ repository.workspace = true
 description = "Log entries, store, query language and crash grouping for mobicat"
 
 [dependencies]
-jiff = "0.2.39"
+jiff = "1.0.1"
 regex = "1.13.1"
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.154"

@@ -12,7 +12,7 @@ description = "Log sources for mobicat: adb logcat, iOS simulator log stream, iP
 anyhow = "1.0.104"
 chrono = { version = "0.4", default-features = false }
 idevice = { version = "0.1.68", default-features = false, features = ["ring", "usbmuxd", "syslog_relay", "installation_proxy", "crashreportcopymobile"] }
-jiff = "0.2.39"
+jiff = "1.0.1"
 plist = "1"
 mobicat-core = { version = "0.4.0", path = "../mobicat-core" }
 serde = { version = "1.0.229", features = ["derive"] }
@@ -28,4 +28,4 @@ uuid = "1"
 tokio = { version = "1.54.1", features = ["rt", "macros", "time", "test-util", "sync"] }
 
 [target."cfg(unix)".dependencies]
-nix = { version = "0.31.3", features = ["signal"] }
+nix = { version = "0.32.0", features = ["signal"] }
